@@ -1,5 +1,8 @@
 #include "Quaternion.hpp"
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 Quaternion::Quaternion()
 {
 	x = 0;
@@ -18,6 +21,8 @@ Quaternion::Quaternion(float _x, float _y, float _z, float _w)
 
 Quaternion Quaternion::QuaternionFromAxis(float axis[], float angle)
 {
+	angle = 2 * M_PI * (angle / 360);
+
 	x = axis[0] * sin(angle / 2.0f);
 	y = axis[1] * sin(angle / 2.0f);
 	z = axis[2] * sin(angle / 2.0f);

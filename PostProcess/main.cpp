@@ -11,11 +11,14 @@
 #include "Camera.h"
 #include "Obj.h"
 
-int renderProgram;
+TwBar *bar;
+int width = 1200;
+int height = 800;
 
 Camera *cam;
 Obj	model;
 
+int renderProgram;
 int post_effect, env_mapping;
 float ratio, angle;
 float scale;
@@ -35,6 +38,7 @@ void TW_CALL GetEnvMappingCB(void *value, void *clientData);
 
 void Initialize();
 void Terminate();
+static  void __stdcall exitCallbackTw(void* clientData);
 
 struct
 {
@@ -65,16 +69,15 @@ int main(int argc, char **argv)
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowPosition(100, 100);
-	glutInitWindowSize(800, 600);
-	glutCreateWindow("Loader Obj");
-	Initialize();
+	glutInitWindowSize(width, height);
+	glutCreateWindow("Post processing");
+	glewInit();
 
 	/** FONCTIONS GLUT **/
 	glutDisplayFunc(render);
 	glutReshapeFunc(reshape);
 	TwInit(TW_OPENGL, NULL);
 
-	glutIdleFunc(render);
 	initScene();
 
 	/** GESTION SOURIS **/
@@ -84,42 +87,31 @@ int main(int argc, char **argv)
 	glutSpecialFunc((GLUTspecialfun)TwEventSpecialGLUT);
 
 	// Create a tweak bar
-	TwBar *bar;
+	
 	bar = TwNewBar("TweakBar");
-	TwDefine(" TweakBar size='250 500' color='96 216 224' "); 
+	TwWindowSize(width, height);
+	TwDefine(" TweakBar size='250 500' color='200 200 200' "); 
 	TwAddVarCB(bar, "Post effect", TW_TYPE_BOOL32, SetPostEffectCB, GetPostEffectCB, NULL, " label='Post effect' key=space help='Toggle post effect mode.' ");
 	TwAddVarCB(bar, "Env Mapping effect", TW_TYPE_BOOL32, SetEnvMappingCB, GetEnvMappingCB, NULL, " label='Env Mapping' key=e help='Toggle env mapping mode.' ");
 	TwAddVarRW(bar, "Scale", TW_TYPE_FLOAT, &scale, " min=0.1 max=20 step=0.1 keyIncr=z keyDecr=Z help='Scale the object (1=original size).' ");
 	TwAddVarRW(bar, "ObjRotation", TW_TYPE_QUAT4F, &rotation, " label='Object rotation' opened=true help='Change the object orientation.' ");
 	TwAddVarRW(bar, "LightDir", TW_TYPE_DIR3F, &light_direction, " label='Light direction' opened=true help='Change the light direction.' ");
+	TwAddSeparator(bar, "program", "");
+	TwAddButton(bar, "Exit", &exitCallbackTw, nullptr, "");
 
 	glutMainLoop();
-	Terminate();
-	return (1);
-}
-
-void Initialize()
-{
-	printf("Version OpenGL : %s\n", glGetString(GL_VERSION));
-	printf("Fabricant : %s\n", glGetString(GL_VENDOR));
-	printf("Pilote : %s\n", glGetString(GL_RENDERER));
-	printf("Version GLSL : %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-
-	glewInit();
-}
-void Terminate()
-{
-	TwTerminate();
+	return 1;
 }
 
 /** GESTION FENETRE **/
 void reshape(int w, int h)
 {
-	if (h == 0)
-		h = 1;
-	ratio = w * 1.0 / h;
-	glViewport(0, 0, w, h);
-	TwWindowSize(w, h);
+	width = w;
+	height = h;
+
+	ratio = width * 1.0 / height;
+	glViewport(0, 0, width, height);
+	TwWindowSize(width, height);
 }
 
 /** AFFICHAGE **/
@@ -141,9 +133,13 @@ void initScene()
 	uniforms.render.cam_position = glGetUniformLocation(renderProgram, "cam_position");
 	uniforms.render.shading_level = glGetUniformLocation(renderProgram, "shading_level");
 
-	cam = new Camera();
+	cam = new Camera(0.0f, 0.0f, 0.0f, -1.0f);
 	light_direction = glm::vec3(-0.5f, -0.5f, -0.5f);
+
 	rotation = Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+
+	float axis[3] = { 0, 0, 1 };
+	rotation.QuaternionFromAxis(axis, 180);
 	scale = 1.0f;
 
 	post_effect = 0;
@@ -151,20 +147,21 @@ void initScene()
 
 	model.load("objects/charizard.obj");
 }
+
 void render(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
-	glCullFace(GL_FRONT);
+	glEnable(GL_BACK);
 
 	// Définition de la caméra
-	glm::vec3 camPos = glm::vec3(-(cam->posx), -(cam->posy), -(cam->posz));
+	glm::vec3 camPos = glm::vec3(cam->posx, cam->posy, cam->posz);
 	glm::mat4 proj = glm::perspective(45.0f, ratio, 0.1f, 400.0f);
 	glm::mat4 view = cam->GetOrientation() * glm::translate(camPos);
 	glm::mat4 proj_view = proj * view;
-	glm::mat4 model_mat = glm::translate(glm::vec3(0, 2, 0)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(scale, -scale, scale));
+	glm::mat4 model_mat = glm::translate(glm::vec3(0, 2, -10)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(scale, scale, scale));
 
 	glUseProgram(renderProgram);
 	glUniformMatrix4fv(uniforms.render.viewproj_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
@@ -176,6 +173,7 @@ void render(void)
 
 	TwDraw();
 	glutSwapBuffers();
+	glutPostRedisplay();
 }
 
 void TW_CALL SetPostEffectCB(const void *value, void *clientData)
@@ -198,4 +196,10 @@ void TW_CALL GetEnvMappingCB(void *value, void *clientData)
 {
 	(void)clientData;
 	*(int *)value = env_mapping;
+}
+
+static  void __stdcall exitCallbackTw(void* clientData)
+{
+	TwTerminate();
+	exit(1);
 }

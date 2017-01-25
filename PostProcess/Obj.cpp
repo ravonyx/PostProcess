@@ -48,8 +48,7 @@ bool Obj::load(const char* path)
 		printf("Impossible to open the file !\n");
 		return false;
 	}
-	std::cout << "Open obj ..." << std::endl;
-
+	std::cout << "--- Read Obj ---" << std::endl;
 	int now = std::time(0);
 	while (1)
 	{
@@ -145,8 +144,8 @@ bool Obj::load(const char* path)
 		}
 	}
 	file.close();
-	std::cout << time(0) - now << std::endl;
-	std::cout << "Obj load !" << std::endl;
+	std::cout <<  time(0) - now << " seconds to load" << std::endl;
+	std::cout << "--- Obj load ---" << std::endl;
 
 	glGenVertexArrays(1, &vaoObj);
 	glBindVertexArray(vaoObj);

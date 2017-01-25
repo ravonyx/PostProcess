@@ -19,6 +19,12 @@
     <ClCompile Include="Tools.cpp">
       <Filter>sources</Filter>
     </ClCompile>
+    <ClCompile Include="Texture.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="Framebuffer.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h">
@@ -36,12 +42,27 @@
     <ClInclude Include="Tools.h">
       <Filter>headers</Filter>
     </ClInclude>
+    <ClInclude Include="Framebuffer.h">
+      <Filter>headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture.h">
+      <Filter>headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="render.fs">
       <Filter>ressources</Filter>
     </None>
     <None Include="render.vs">
+      <Filter>ressources</Filter>
+    </None>
+    <None Include="shaders\blit.fs">
+      <Filter>ressources</Filter>
+    </None>
+    <None Include="shaders\blit.vs">
+      <Filter>ressources</Filter>
+    </None>
+    <None Include="shaders\blitDepth.fs">
       <Filter>ressources</Filter>
     </None>
   </ItemGroup>

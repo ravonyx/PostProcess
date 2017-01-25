@@ -134,21 +134,28 @@
   <ItemGroup>
     <ClCompile Include="..\libs\common\EsgiShader.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Framebuffer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Obj.cpp" />
     <ClCompile Include="Quaternion.cpp" />
+    <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Tools.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libs\common\EsgiShader.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Framebuffer.h" />
     <ClInclude Include="Obj.h" />
     <ClInclude Include="Quaternion.hpp" />
+    <ClInclude Include="Texture.h" />
     <ClInclude Include="Tools.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="render.fs" />
     <None Include="render.vs" />
+    <None Include="shaders\blit.fs" />
+    <None Include="shaders\blit.vs" />
+    <None Include="shaders\blitDepth.fs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

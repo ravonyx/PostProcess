@@ -10,18 +10,20 @@
 #include "EsgiShader.h"
 #include "Camera.h"
 #include "Obj.h"
+#include "Framebuffer.h"
 
 TwBar *bar;
 int width = 1200;
 int height = 800;
 
+Framebuffer *fbo;
+int renderProgram, blitProgram, blitDepthProgram;
+
 Camera *cam;
 Obj	model;
 
-int renderProgram;
 int post_effect, env_mapping;
-float ratio, angle;
-float scale;
+float ratio, angle, scale;
 Quaternion rotation;
 glm::vec3 light_direction;
 
@@ -29,15 +31,14 @@ bool mode_ui = true;
 
 void reshape(int w, int h);
 void initScene();
+void loadShaders();
 void render(void);
+void displayDebug();
 
 void TW_CALL SetPostEffectCB(const void *value, void *clientData);
 void TW_CALL GetPostEffectCB(void *value, void *clientData);
 void TW_CALL SetEnvMappingCB(const void *value, void *clientData);
 void TW_CALL GetEnvMappingCB(void *value, void *clientData);
-
-void Initialize();
-void Terminate();
 static  void __stdcall exitCallbackTw(void* clientData);
 
 struct
@@ -60,6 +61,8 @@ struct
 		GLint           randomize_points;
 		GLint           point_count;
 	} ssao;
+
+
 } uniforms;
 
 int main(int argc, char **argv)
@@ -78,6 +81,7 @@ int main(int argc, char **argv)
 	glutReshapeFunc(reshape);
 	TwInit(TW_OPENGL, NULL);
 
+	loadShaders();
 	initScene();
 
 	/** GESTION SOURIS **/
@@ -87,7 +91,6 @@ int main(int argc, char **argv)
 	glutSpecialFunc((GLUTspecialfun)TwEventSpecialGLUT);
 
 	// Create a tweak bar
-	
 	bar = TwNewBar("TweakBar");
 	TwWindowSize(width, height);
 	TwDefine(" TweakBar size='250 500' color='200 200 200' "); 
@@ -114,25 +117,43 @@ void reshape(int w, int h)
 	TwWindowSize(width, height);
 }
 
-/** AFFICHAGE **/
-void initScene()
+/** INIT **/
+void loadShaders()
 {
-	EsgiShader renderShader;
+	EsgiShader renderShader, blitShader, blitDepthShader;
 
-	printf("Load Fragment obj shader\n");
-	renderShader.LoadFragmentShader("render.fs");
-	printf("Load Vertex obj shader\n");
-	renderShader.LoadVertexShader("render.vs");
+	printf("render fs\n");
+	renderShader.LoadFragmentShader("shaders/render.fs");
+	printf("render vs\n");
+	renderShader.LoadVertexShader("shaders/render.vs");
 	renderShader.Create();
 
+	printf("blit fs\n");
+	blitShader.LoadFragmentShader("shaders/blit.fs");
+	printf("blit vs\n");
+	blitShader.LoadVertexShader("shaders/blit.vs");
+	blitShader.Create();
+
+	printf("blitDepth fs\n");
+	blitDepthShader.LoadFragmentShader("shaders/blitDepth.fs");
+	printf("blit vs\n");
+	blitDepthShader.LoadVertexShader("shaders/blit.vs");
+	blitDepthShader.Create();
+
 	renderProgram = renderShader.GetProgram();
+	blitProgram = blitShader.GetProgram();
+	blitDepthProgram = blitDepthShader.GetProgram();
+
 	glUseProgram(renderProgram);
 	uniforms.render.model_matrix = glGetUniformLocation(renderProgram, "model_matrix");
 	uniforms.render.viewproj_matrix = glGetUniformLocation(renderProgram, "viewproj_matrix");
 	uniforms.render.light_direction = glGetUniformLocation(renderProgram, "light_direction");
 	uniforms.render.cam_position = glGetUniformLocation(renderProgram, "cam_position");
 	uniforms.render.shading_level = glGetUniformLocation(renderProgram, "shading_level");
+}
 
+void initScene()
+{
 	cam = new Camera(0.0f, 0.0f, 0.0f, -1.0f);
 	light_direction = glm::vec3(-0.5f, -0.5f, -0.5f);
 
@@ -145,11 +166,16 @@ void initScene()
 	post_effect = 0;
 	env_mapping = 0;
 
+	fbo = new Framebuffer(width, height);
+	fbo->Init();
+
 	model.load("objects/charizard.obj");
 }
 
 void render(void)
 {
+	glViewport(0, 0, width, height);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo->gBuffer);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glEnable(GL_DEPTH_TEST);
@@ -171,9 +197,55 @@ void render(void)
 	glUniform3fv(uniforms.render.cam_position, 1, &camPos[0]);
 	model.render();
 
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	model.render();
+	displayDebug();
+	
 	TwDraw();
 	glutSwapBuffers();
 	glutPostRedisplay();
+}
+
+void displayDebug()
+{
+	GLuint textLoc = glGetUniformLocation(blitProgram, "texture_data");
+	GLuint textDepthLoc = glGetUniformLocation(blitDepthProgram, "texture_data");
+
+	glUseProgram(blitProgram);
+	glActiveTexture(GL_TEXTURE0);
+
+	glViewport(0, 0, width / 4, height / 5);
+	glBindVertexArray(fbo->vao);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, fbo->colorTexture);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
+
+	glViewport(width / 4, 0, width / 4, height / 5);
+	glBindVertexArray(fbo->vao);
+	glBindTexture(GL_TEXTURE_2D, fbo->normalTexture);
+	glUniform1i(textLoc, 0);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
+
+	glViewport(width / 4 + width / 4, 0, width / 4, height / 5);
+	glBindVertexArray(fbo->vao);
+	glBindTexture(GL_TEXTURE_2D, fbo->specularTexture);
+	glUniform1i(textLoc, 0);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
+
+	glUseProgram(blitDepthProgram);
+
+	glViewport(width / 4 + width / 4 + width / 4, 0, width / 4, height / 5);
+	glBindVertexArray(fbo->vao);
+	glBindTexture(GL_TEXTURE_2D, fbo->gDepth);
+	glUniform1i(textDepthLoc, 0);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
 }
 
 void TW_CALL SetPostEffectCB(const void *value, void *clientData)

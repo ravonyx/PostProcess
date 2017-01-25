@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Camera.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\common\EsgiShader.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="Obj.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="Quaternion.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="Tools.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Camera.h">
+      <Filter>headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\common\EsgiShader.h">
+      <Filter>headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Obj.h">
+      <Filter>headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Quaternion.hpp">
+      <Filter>headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Tools.h">
+      <Filter>headers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ShaderObj.frag">
+      <Filter>ressources</Filter>
+    </None>
+    <None Include="ShaderObj.vert">
+      <Filter>ressources</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="sources">
+      <UniqueIdentifier>{c94032c6-a170-42e7-9677-0f7d2970b481}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="headers">
+      <UniqueIdentifier>{f583b7d5-9934-4271-8c8e-0351a44e0ac5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ressources">
+      <UniqueIdentifier>{1b92b0a4-566b-438a-a849-9b5f334eb89c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -3,12 +3,24 @@
 #include <gtx\transform.hpp>
 
 #include <iostream>
-
-#include "Scene.h"
 #include <AntTweakBar.h>
-
 #include <stdio.h>
 #include "glut.h"
+
+#include "EsgiShader.h"
+#include "Camera.h"
+#include "Obj.h"
+
+int programObjID;
+EsgiShader objShader;
+
+Camera *cam;
+Obj	model;
+
+int post_effect, env_mapping;
+float ratio, angle;
+float scale;
+Quaternion rotation;
 
 bool mode_ui = true;
 GLuint uniVP, uniM;
@@ -58,8 +70,6 @@ int main(int argc, char **argv)
 	TwAddVarCB(bar, "Env Mapping effect", TW_TYPE_BOOL32, SetEnvMappingCB, GetEnvMappingCB, NULL, " label='Env Mapping' key=e help='Toggle env mapping mode.' ");
 	TwAddVarRW(bar, "Scale", TW_TYPE_FLOAT, &scale, " min=0.1 max=20 step=0.1 keyIncr=z keyDecr=Z help='Scale the object (1=original size).' ");
 	TwAddVarRW(bar, "ObjRotation", TW_TYPE_QUAT4F, &rotation, " label='Object rotation' opened=true help='Change the object orientation.' ");
-	TwAddVarRW(bar, "Multiplier", TW_TYPE_FLOAT, &light_multiplier, " label='Light booster' min=1 max=10 step=0.1 keyIncr='+' keyDecr='-' help='Increase/decrease the light power.' ");
-	TwAddVarRW(bar, "LightDir", TW_TYPE_DIR3F, &light_direction, " label='Light direction' opened=true help='Change the light direction.' ");
 
 	glutMainLoop();
 	Terminate();
@@ -77,11 +87,7 @@ void Initialize()
 }
 void Terminate()
 {
-	basicShader.Destroy();
-	skyboxShader.Destroy();
 	objShader.Destroy();
-	objShaderEnvMapping.Destroy();
-	postShader.Destroy();
 	TwTerminate();
 }
 
@@ -104,12 +110,7 @@ void initScene()
 	objShader.LoadVertexShader("ShaderObj.vert");
 	objShader.Create();
 
-	programSkyboxID = skyboxShader.GetProgram();
-	programBasicID = basicShader.GetProgram();
 	programObjID = objShader.GetProgram();
-	programObjEnvMappingID = objShaderEnvMapping.GetProgram();
-	programPostID = postShader.GetProgram();
-	programGridID = gridShader.GetProgram();
 
 	cam = new Camera();
 
@@ -119,10 +120,7 @@ void initScene()
 	post_effect = 0;
 	env_mapping = 0;
 
-	light_direction = glm::vec3(-0.5f, -0.5f, -0.5f);
-	light_multiplier = 1.0f;
-
-	model.loadObj("objects/box.obj", programObjID, programObjEnvMappingID);
+	model.loadObj("objects/charizard.obj");
 	glUseProgram(programObjID);
 	uniVP = glGetUniformLocation(programObjID, "VP");
 	uniM = glGetUniformLocation(programObjID, "M");
@@ -143,11 +141,10 @@ void render(void)
 	glm::mat4 model_mat = glm::translate(glm::vec3(0, 2, 0)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(scale, -scale, scale));
 
 	//Get light dir
-	glm::vec3 lightDirection = glm::vec3(light_direction[0], light_direction[1], light_direction[2]);
 	glUseProgram(programObjID);
 	glUniformMatrix4fv(uniVP, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
 	glUniformMatrix4fv(uniM, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
-	model.Draw(camPos, -lightDirection, light_multiplier);
+	model.Draw(camPos);
 
 	TwDraw();
 	glutSwapBuffers();

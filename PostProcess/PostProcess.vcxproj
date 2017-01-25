@@ -137,7 +137,6 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Obj.cpp" />
     <ClCompile Include="Quaternion.cpp" />
-    <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Tools.cpp" />
   </ItemGroup>
   <ItemGroup>

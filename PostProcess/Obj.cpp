@@ -31,7 +31,7 @@ int findInVector(std::vector<Vertex>& mVec, Vertex key)
 	return found;
 }
 
-bool Obj::loadObj(const char* path, int programID, int programEnvMappingID)
+bool Obj::loadObj(const char* path)
 {
 	std::vector< unsigned int > vertexIndices, uvIndices, normalIndices;
 	std::vector< glm::vec3 > temp_vertices,  temp_normals;
@@ -184,76 +184,11 @@ bool Obj::loadObj(const char* path, int programID, int programEnvMappingID)
 	glBindVertexArray(0);
 
 	size = indices.size();
-	texture_loc = glGetUniformLocation(programID, "texDiffuse");
-	use_mat_loc = glGetUniformLocation(programID, "material");
-	obj_only_loc = glGetUniformLocation(programID, "objOnly");
-	use_normals_loc = glGetUniformLocation(programID, "useNormals");
-	use_tex_diffuse_loc = glGetUniformLocation(programID, "useTexDiffuse");
-	light_dir_loc = glGetUniformLocation(programID, "light_dir");
-	light_mult_loc = glGetUniformLocation(programID, "light_multiplier");
-
-	attr_cam_pos = glGetUniformLocation(programID, "camPos");
-	attr_diffuse = glGetUniformLocation(programID, "diffuse");
-	attr_ambient = glGetUniformLocation(programID, "ambient");
-	attr_spec = glGetUniformLocation(programID, "specular");
-	attr_shininess = glGetUniformLocation(programID, "shininess");
-	flip_text_loc = glGetUniformLocation(programID, "flipText");
-
-	attr_cam_env = glGetUniformLocation(programEnvMappingID, "camPos");
-	skybox_location = glGetUniformLocation(programEnvMappingID, "cube_texture");
-
 	return true;
 }
 
-void Obj::Draw(glm::vec3 camPos, glm::vec3 lightDirection, GLfloat lightMultiplier)
+void Obj::Draw(glm::vec3 camPos)
 {
-
-	
-		if (strstr(mat.texDiffuse.c_str(), "dds") != NULL)
-			glUniform1i(flip_text_loc, 1);
-		else
-			glUniform1i(flip_text_loc, 0);
-
-		glUniform3fv(light_dir_loc, 1, &lightDirection[0]);
-		glUniform1f(light_mult_loc, lightMultiplier);
-		glUniform3fv(attr_cam_pos, 1, &camPos[0]);
-
-		glUniform1i(obj_only_loc, use_obj_only);
-
-		if (use_normal)
-			glUniform1i(use_normals_loc, 1);
-		else
-			glUniform1i(use_normals_loc, 0);
-		if (use_mat)
-			glUniform1i(use_mat_loc, 1);
-		else
-			glUniform1i(use_mat_loc, 0);
-
-		if (tex != -1)
-		{
-			glActiveTexture(GL_TEXTURE0);
-
-			glBindTexture(GL_TEXTURE_2D, tex);
-			glUniform1i(texture_loc, 0);
-		}
-		else
-		{
-			if (!mat.texDiffuse.empty())
-			{
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D, texDiffuse);
-				glUniform1i(texture_loc, 0);
-				glUniform1i(use_tex_diffuse_loc, 1);
-			}
-			else
-				glUniform1i(use_tex_diffuse_loc, 0);
-
-			glUniform3fv(attr_diffuse, 1, &mat.diffuse[0]);
-			glUniform3fv(attr_ambient, 1, &mat.ambient[0]);
-			glUniform3fv(attr_spec, 1, &mat.specular[0]);
-			glUniform1f(attr_shininess, mat.shininess);
-		}
-	
 	glBindVertexArray(vaoObj);
 	glDrawElements(GL_TRIANGLES, size, GL_UNSIGNED_INT, (void*)0);
 	glBindVertexArray(0);

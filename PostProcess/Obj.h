@@ -22,8 +22,8 @@ class Obj
 	public:
 		Obj(void);
 		virtual ~Obj(void);
-		bool	loadObj(const char* path, int programID, int programEnvMappingID);
-		void    Draw(glm::vec3 camPos, glm::vec3 lightDirection, GLfloat lightMultiplier);
+		bool	loadObj(const char* path);
+		void    Draw(glm::vec3 camPos);
 
 	private:
 		bool use_normal, use_tex, use_obj_only, use_mat;

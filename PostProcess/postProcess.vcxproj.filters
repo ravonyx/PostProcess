@@ -50,12 +50,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="render.fs">
-      <Filter>ressources</Filter>
-    </None>
-    <None Include="render.vs">
-      <Filter>ressources</Filter>
-    </None>
     <None Include="shaders\blit.fs">
       <Filter>ressources</Filter>
     </None>
@@ -63,6 +57,12 @@
       <Filter>ressources</Filter>
     </None>
     <None Include="shaders\blitDepth.fs">
+      <Filter>ressources</Filter>
+    </None>
+    <None Include="shaders\render.fs">
+      <Filter>ressources</Filter>
+    </None>
+    <None Include="shaders\render.vs">
       <Filter>ressources</Filter>
     </None>
   </ItemGroup>

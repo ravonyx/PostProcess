@@ -239,7 +239,6 @@ void displayDebug()
 	glBindVertexArray(0);
 
 	glUseProgram(blitDepthProgram);
-
 	glViewport(width / 4 + width / 4 + width / 4, 0, width / 4, height / 5);
 	glBindVertexArray(fbo->vao);
 	glBindTexture(GL_TEXTURE_2D, fbo->gDepth);

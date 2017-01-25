@@ -33,8 +33,4 @@ void main()
     // Write final color to the framebuffer
     color[0] = mix(vec4(0.0), vec4(diffuse + specular, 1.0), shading_level);
     color[1] = vec4(vec3(normals), 1.0);
-
-	//color = vec4(vec3(light_direction_norm), 1.0);
-	//color = vec4(vec3(normals), 1.0);
-   // normal_depth = vec4(normal_calc, viewVector.z);
 }

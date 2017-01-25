@@ -120,7 +120,7 @@ void initScene()
 	post_effect = 0;
 	env_mapping = 0;
 
-	model.loadObj("objects/charizard.obj");
+	model.load("objects/charizard.obj");
 	glUseProgram(programObjID);
 	uniVP = glGetUniformLocation(programObjID, "VP");
 	uniM = glGetUniformLocation(programObjID, "M");
@@ -144,7 +144,7 @@ void render(void)
 	glUseProgram(programObjID);
 	glUniformMatrix4fv(uniVP, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
 	glUniformMatrix4fv(uniM, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
-	model.Draw(camPos);
+	model.render();
 
 	TwDraw();
 	glutSwapBuffers();

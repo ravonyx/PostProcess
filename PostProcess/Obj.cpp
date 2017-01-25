@@ -31,7 +31,7 @@ int findInVector(std::vector<Vertex>& mVec, Vertex key)
 	return found;
 }
 
-bool Obj::loadObj(const char* path)
+bool Obj::load(const char* path)
 {
 	std::vector< unsigned int > vertexIndices, uvIndices, normalIndices;
 	std::vector< glm::vec3 > temp_vertices,  temp_normals;
@@ -159,22 +159,16 @@ bool Obj::loadObj(const char* path)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, 0);
 	glEnableVertexAttribArray(0);
 
-	use_normal = true;
-	use_tex = true;
 	if (temp_uvs.size() > 0)
 	{
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(3 * sizeof(float)));
 		glEnableVertexAttribArray(1);
 	}
-	else
-		use_tex = false;
 	if (temp_normals.size() > 0)
 	{
 		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(5 * sizeof(float)));
 		glEnableVertexAttribArray(2);
 	}
-	else
-		use_normal = false;
 
 	GLuint elementbuffer;
 	glGenBuffers(1, &elementbuffer);
@@ -187,7 +181,7 @@ bool Obj::loadObj(const char* path)
 	return true;
 }
 
-void Obj::Draw(glm::vec3 camPos)
+void Obj::render()
 {
 	glBindVertexArray(vaoObj);
 	glDrawElements(GL_TRIANGLES, size, GL_UNSIGNED_INT, (void*)0);

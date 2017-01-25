@@ -7,6 +7,7 @@ in vec3 normal;
 uniform mat4 viewproj_matrix;
 uniform mat4 model_matrix;
 
+out vec3 pos;
 out vec2 textCoords;
 out vec3 normals;
 out vec3 lightVector;
@@ -22,5 +23,6 @@ void main()
 	normals = normalMatrix * normal;
 	textCoords = textCoord;
 
-    gl_Position = viewproj_matrix * model_matrix * vec4(position, 1.0f) ; 
+    pos = vec3(viewproj_matrix * model_matrix * vec4(position, 1.0f)); 
+    gl_Position = viewproj_matrix * model_matrix * vec4(position, 1.0f); 
 }

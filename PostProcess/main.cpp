@@ -35,10 +35,10 @@ void loadShaders();
 void render(void);
 void displayDebug();
 
-void TW_CALL SetPostEffectCB(const void *value, void *clientData);
-void TW_CALL GetPostEffectCB(void *value, void *clientData);
-void TW_CALL SetEnvMappingCB(const void *value, void *clientData);
-void TW_CALL GetEnvMappingCB(void *value, void *clientData);
+void TW_CALL SetSSAOCB(const void *value, void *clientData);
+void TW_CALL GetSSAOCB(void *value, void *clientData);
+void TW_CALL SetDOFCB(const void *value, void *clientData);
+void TW_CALL GetDOFCB(void *value, void *clientData);
 static  void __stdcall exitCallbackTw(void* clientData);
 
 struct
@@ -61,8 +61,6 @@ struct
 		GLint           randomize_points;
 		GLint           point_count;
 	} ssao;
-
-
 } uniforms;
 
 int main(int argc, char **argv)
@@ -94,8 +92,9 @@ int main(int argc, char **argv)
 	bar = TwNewBar("TweakBar");
 	TwWindowSize(width, height);
 	TwDefine(" TweakBar size='250 500' color='200 200 200' "); 
-	TwAddVarCB(bar, "Post effect", TW_TYPE_BOOL32, SetPostEffectCB, GetPostEffectCB, NULL, " label='Post effect' key=space help='Toggle post effect mode.' ");
-	TwAddVarCB(bar, "Env Mapping effect", TW_TYPE_BOOL32, SetEnvMappingCB, GetEnvMappingCB, NULL, " label='Env Mapping' key=e help='Toggle env mapping mode.' ");
+	TwAddVarCB(bar, "SSAO", TW_TYPE_BOOL32, SetSSAOCB, GetSSAOCB, NULL, " label='SSAO' key=e help='Screen space ambient occlusion' ");
+	TwAddVarCB(bar, "DOF", TW_TYPE_BOOL32, SetDOFCB, GetDOFCB, NULL, " label='DOF' key=e help='Depth of field' ");
+
 	TwAddVarRW(bar, "Scale", TW_TYPE_FLOAT, &scale, " min=0.1 max=20 step=0.1 keyIncr=z keyDecr=Z help='Scale the object (1=original size).' ");
 	TwAddVarRW(bar, "ObjRotation", TW_TYPE_QUAT4F, &rotation, " label='Object rotation' opened=true help='Change the object orientation.' ");
 	TwAddVarRW(bar, "LightDir", TW_TYPE_DIR3F, &light_direction, " label='Light direction' opened=true help='Change the light direction.' ");
@@ -247,23 +246,23 @@ void displayDebug()
 	glBindVertexArray(0);
 }
 
-void TW_CALL SetPostEffectCB(const void *value, void *clientData)
+void TW_CALL SetSSAOCB(const void *value, void *clientData)
 {
 	(void)clientData; 
 	post_effect = *(const int *)value;
 }
-void TW_CALL GetPostEffectCB(void *value, void *clientData)
+void TW_CALL GetSSAOCB(void *value, void *clientData)
 {
 	(void)clientData; 
 	*(int *)value = post_effect; 
 }
 
-void TW_CALL SetEnvMappingCB(const void *value, void *clientData)
+void TW_CALL SetDOFCB(const void *value, void *clientData)
 {
 	(void)clientData;
 	env_mapping = *(const int *)value;
 }
-void TW_CALL GetEnvMappingCB(void *value, void *clientData)
+void TW_CALL GetDOFCB(void *value, void *clientData)
 {
 	(void)clientData;
 	*(int *)value = env_mapping;

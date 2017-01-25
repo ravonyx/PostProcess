@@ -122,7 +122,7 @@ void initScene()
 	light_direction = glm::vec3(-0.5f, -0.5f, -0.5f);
 	light_multiplier = 1.0f;
 
-	model.loadObj("box.obj", programObjID, programObjEnvMappingID);
+	model.loadObj("objects/box.obj", programObjID, programObjEnvMappingID);
 	glUseProgram(programObjID);
 	uniVP = glGetUniformLocation(programObjID, "VP");
 	uniM = glGetUniformLocation(programObjID, "M");

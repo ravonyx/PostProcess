@@ -144,12 +144,11 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Obj.h" />
     <ClInclude Include="Quaternion.hpp" />
-    <ClInclude Include="Scene.h" />
     <ClInclude Include="Tools.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ShaderObj.frag" />
-    <None Include="ShaderObj.vert" />
+    <None Include="render.fs" />
+    <None Include="render.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

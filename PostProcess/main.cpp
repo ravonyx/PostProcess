@@ -11,8 +11,7 @@
 #include "Camera.h"
 #include "Obj.h"
 
-int programObjID;
-EsgiShader objShader;
+int renderProgram;
 
 Camera *cam;
 Obj	model;
@@ -23,7 +22,7 @@ float scale;
 Quaternion rotation;
 
 bool mode_ui = true;
-GLuint uniVP, uniM;
+GLuint viewproj_matrix, model_matrix;
 
 void reshape(int w, int h);
 void initScene();
@@ -39,7 +38,6 @@ void Terminate();
 
 int main(int argc, char **argv)
 {
-	TwBar *bar;
 
 	/** CREATION FENETRE **/
 	glutInit(&argc, argv);
@@ -64,6 +62,7 @@ int main(int argc, char **argv)
 	glutSpecialFunc((GLUTspecialfun)TwEventSpecialGLUT);
 
 	// Create a tweak bar
+	TwBar *bar;
 	bar = TwNewBar("TweakBar");
 	TwDefine(" TweakBar size='250 500' color='96 216 224' "); 
 	TwAddVarCB(bar, "Post effect", TW_TYPE_BOOL32, SetPostEffectCB, GetPostEffectCB, NULL, " label='Post effect' key=space help='Toggle post effect mode.' ");
@@ -87,7 +86,6 @@ void Initialize()
 }
 void Terminate()
 {
-	objShader.Destroy();
 	TwTerminate();
 }
 
@@ -96,22 +94,23 @@ void reshape(int w, int h)
 {
 	if (h == 0)
 		h = 1;
-
 	ratio = w * 1.0 / h;
 	glViewport(0, 0, w, h);
 	TwWindowSize(w, h);
 }
+
 /** AFFICHAGE **/
 void initScene()
 {
+	EsgiShader renderShader;
+
 	printf("Load Fragment obj shader\n");
-	objShader.LoadFragmentShader("ShaderObj.frag");
+	renderShader.LoadFragmentShader("render.fs");
 	printf("Load Vertex obj shader\n");
-	objShader.LoadVertexShader("ShaderObj.vert");
-	objShader.Create();
+	renderShader.LoadVertexShader("render.vs");
+	renderShader.Create();
 
-	programObjID = objShader.GetProgram();
-
+	renderProgram = renderShader.GetProgram();
 	cam = new Camera();
 
 	rotation = Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
@@ -121,9 +120,9 @@ void initScene()
 	env_mapping = 0;
 
 	model.load("objects/charizard.obj");
-	glUseProgram(programObjID);
-	uniVP = glGetUniformLocation(programObjID, "VP");
-	uniM = glGetUniformLocation(programObjID, "M");
+	glUseProgram(renderProgram);
+	viewproj_matrix = glGetUniformLocation(renderProgram, "viewproj_matrix");
+	model_matrix = glGetUniformLocation(renderProgram, "model_matrix");
 }
 void render(void)
 {
@@ -140,10 +139,9 @@ void render(void)
 	glm::mat4 proj_view = proj * view;
 	glm::mat4 model_mat = glm::translate(glm::vec3(0, 2, 0)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(scale, -scale, scale));
 
-	//Get light dir
-	glUseProgram(programObjID);
-	glUniformMatrix4fv(uniVP, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
-	glUniformMatrix4fv(uniM, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+	glUseProgram(renderProgram);
+	glUniformMatrix4fv(viewproj_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
+	glUniformMatrix4fv(model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
 	model.render();
 
 	TwDraw();

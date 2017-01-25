@@ -33,18 +33,15 @@
     <ClInclude Include="Quaternion.hpp">
       <Filter>headers</Filter>
     </ClInclude>
-    <ClInclude Include="Scene.h">
-      <Filter>headers</Filter>
-    </ClInclude>
     <ClInclude Include="Tools.h">
       <Filter>headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ShaderObj.frag">
+    <None Include="render.fs">
       <Filter>ressources</Filter>
     </None>
-    <None Include="ShaderObj.vert">
+    <None Include="render.vs">
       <Filter>ressources</Filter>
     </None>
   </ItemGroup>

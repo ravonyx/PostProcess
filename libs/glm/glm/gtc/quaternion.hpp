@@ -150,9 +150,6 @@ namespace glm
 	// -- Unary bit operators --
 
 	template <typename T, precision P>
-	GLM_FUNC_DECL tquat<T, P> operator+(tquat<T, P> const & q);
-
-	template <typename T, precision P>
 	GLM_FUNC_DECL tquat<T, P> operator-(tquat<T, P> const & q);
 
 	// -- Binary operators --
@@ -183,14 +180,6 @@ namespace glm
 
 	template <typename T, precision P>
 	GLM_FUNC_DECL tquat<T, P> operator/(tquat<T, P> const & q, T const & s);
-
-	// -- Boolean operators --
-
-	template <typename T, precision P>
-	GLM_FUNC_DECL bool operator==(tquat<T, P> const & q1, tquat<T, P> const & q2);
-
-	template <typename T, precision P>
-	GLM_FUNC_DECL bool operator!=(tquat<T, P> const & q1, tquat<T, P> const & q2);
 
 	/// Returns the length of the quaternion.
 	/// 

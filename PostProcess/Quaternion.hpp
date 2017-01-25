@@ -4,7 +4,7 @@
 #include <math.h> 
 #include <iostream>
 #include <ostream>
-#include <glm\glm.hpp>
+#include <glm.hpp>
 
 class Quaternion
 {

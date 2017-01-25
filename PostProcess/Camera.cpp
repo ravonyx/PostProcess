@@ -5,20 +5,20 @@
 #include "Camera.h"
 #include <GL/glew.h>
 
-Camera::Camera(int posX, int posY, int posZ, int dirZ)
+Camera::Camera()
 {
     deltaForward = 0;
     deltaStrafe = 0;
 
-    posx = posX;
-    posy = posY;
-    posz = posZ;
+    posx = 0.0f;
+    posy = 1.5f;
+    posz = 5.0f;
 
     dirx = 0.0f;
     diry = 0.0f;
-    dirz = dirZ;
+    dirz = -1.0f;
 
-	angleh = 0.0f;
+	angleh = M_PI / 8.0f;// 0.0f;
 	anglev = 0.0f;
 
     xOrigin = -1;
@@ -28,33 +28,6 @@ Camera::Camera(int posX, int posY, int posZ, int dirZ)
     deltaAngley = 0.0f;
 
     locked = 1;
-}
-
-void Camera::reset()
-{
-	deltaForward = 0;
-	deltaStrafe = 0;
-
-	posx = 0.0f;
-	posy = 0.0f;
-	posz = -1.0f;
-
-	dirx = 0.0f;
-	diry = 0.0f;
-	dirz = -1.0f;
-
-	angleh = 0.0f;
-	anglev = 0.0f;
-
-	xOrigin = -1;
-	yOrigin = -1;
-
-	deltaAnglex = 0.0f;
-	deltaAngley = 0.0f;
-
-	locked = 1;
-
-	_matrix = glm::mat4(1.0);
 }
 
 void Camera::updatePos()
@@ -128,7 +101,3 @@ void Camera::grabCam(int x, int y)
     yOrigin = y;
 }
 
-glm::vec3& Camera::getUpVector()
-{
-	return glm::vec3(_matrix[1][0], _matrix[1][1], _matrix[1][2]);
-}

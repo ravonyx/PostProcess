@@ -1,17 +1,17 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#define MOVE_SPEED 1.0f
-#define SENSIBILITY 0.001f
+#define MOVE_SPEED 0.1f
+#define SENSIBILITY 0.005f
 
-#include <glm\glm.hpp>
-#include <glm\gtc\matrix_transform.hpp>
+#include <glm.hpp>
+#include <gtc\matrix_transform.hpp>
 #include "Quaternion.hpp"
 
 class Camera
 {
 public:
-	Camera(int posX, int posY, int posZ, int dirZ);
+	Camera();
 
 	char locked;
 
@@ -28,16 +28,16 @@ public:
 
 	glm::mat4 _matrix;
 
-	glm::vec3& getUpVector();
 	void updatePos(void);
 	void releaseCam(void);
 	void grabCam(int x, int y);
 	void orienterCam(int x, int y);
 	glm::mat4 GetOrientation();
-	void reset();
 
 protected:
 private:
+
+
 	float angleh;
 	float anglev;
 

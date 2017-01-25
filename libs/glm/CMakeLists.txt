@@ -1,8 +1,4 @@
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
-cmake_policy(VERSION 2.6)
-if (NOT CMAKE_VERSION VERSION_LESS "3.1")
-	cmake_policy(SET CMP0054 NEW)
-endif()
 
 project(glm)
 set(GLM_VERSION "0.9.7")
@@ -53,12 +49,6 @@ if(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang") OR ("${CMAKE_CXX_COMPILER_ID}" 
 		set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++98")
 		set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
 		set(CMAKE_CXX_FLAGS "-std=c++98")
-		if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-			# GLM is using GCC 64 bits integer extension
-			add_definitions(-Wno-long-long)
-		elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-			add_definitions(-Wno-c++11-long-long)
-		endif()
 	endif()
 endif()
 
@@ -205,18 +195,5 @@ if (NOT CMAKE_VERSION VERSION_LESS "3.0")
         DESTINATION ${GLM_INSTALL_CONFIGDIR}
     )
 endif()
-
-# build pkg-config file
-configure_file(
-    "./cmake/glm.pc.in"
-    "glm.pc"
-    @ONLY
-)
-
-# install pkg-config file
-install(
-    FILES "${CMAKE_CURRENT_BINARY_DIR}/glm.pc"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
-)
 
 export(PACKAGE glm)

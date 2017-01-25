@@ -297,12 +297,6 @@ namespace detail
 	// -- Unary bit operators --
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tquat<T, P> operator+(tquat<T, P> const & q)
-	{
-		return q;
-	}
-
-	template <typename T, precision P>
 	GLM_FUNC_QUALIFIER tquat<T, P> operator-(tquat<T, P> const & q)
 	{
 		return tquat<T, P>(-q.w, -q.x, -q.y, -q.z);
@@ -597,7 +591,7 @@ namespace detail
 	template <typename T, precision P>
 	GLM_FUNC_QUALIFIER T yaw(tquat<T, P> const & q)
 	{
-		return asin(clamp(T(-2) * (q.x * q.z - q.w * q.y), T(-1), T(1)));
+		return asin(T(-2) * (q.x * q.z - q.w * q.y));
 	}
 
 	template <typename T, precision P>

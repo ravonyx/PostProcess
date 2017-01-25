@@ -15,86 +15,53 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\common\EsgiShader.cpp">
+    <ClCompile Include="Obj.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
     <ClCompile Include="Quaternion.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
-    <ClCompile Include="Texture.cpp">
+    <ClCompile Include="Tools.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
-    <ClCompile Include="Framebuffer.cpp">
+    <ClCompile Include="..\libs\common\EsgiShader.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
-    <ClCompile Include="Camera.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Ssao.cpp">
+    <ClCompile Include="Scene.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\common\EsgiShader.h">
+    <ClInclude Include="Camera.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
-    <ClInclude Include="..\libs\stb\stb_image.h">
+    <ClInclude Include="Obj.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
     <ClInclude Include="Quaternion.hpp">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
-    <ClInclude Include="Texture.h">
+    <ClInclude Include="Tools.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
-    <ClInclude Include="Framebuffer.h">
+    <ClInclude Include="..\libs\common\EsgiShader.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
-    <ClInclude Include="Camera.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Ssao.h">
+    <ClInclude Include="Scene.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\aliasing.fs">
+    <None Include="ShaderObj.vert">
       <Filter>Fichiers de ressources</Filter>
     </None>
-    <None Include="shaders\blit.fs">
-      <Filter>Fichiers de ressources</Filter>
-    </None>
-    <None Include="shaders\blit.vs">
-      <Filter>Fichiers de ressources</Filter>
-    </None>
-    <None Include="shaders\blitDepth.fs">
-      <Filter>Fichiers de ressources</Filter>
-    </None>
-    <None Include="shaders\dof.fs">
-      <Filter>Fichiers de ressources</Filter>
-    </None>
-    <None Include="shaders\light.fs">
-      <Filter>Fichiers de ressources</Filter>
-    </None>
-    <None Include="shaders\light.vs">
-      <Filter>Fichiers de ressources</Filter>
-    </None>
-    <None Include="shaders\main.fs">
-      <Filter>Fichiers de ressources</Filter>
-    </None>
-    <None Include="shaders\main.vs">
-      <Filter>Fichiers de ressources</Filter>
-    </None>
-    <None Include="shaders\postProcess.fs">
-      <Filter>Fichiers de ressources</Filter>
-    </None>
-    <None Include="shaders\postProcess.vs">
-      <Filter>Fichiers de ressources</Filter>
-    </None>
-    <None Include="shaders\ssao.fs">
+    <None Include="ShaderObj.frag">
       <Filter>Fichiers de ressources</Filter>
     </None>
   </ItemGroup>

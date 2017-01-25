@@ -20,9 +20,9 @@ int post_effect, env_mapping;
 float ratio, angle;
 float scale;
 Quaternion rotation;
+glm::vec3 light_direction;
 
 bool mode_ui = true;
-GLuint viewproj_matrix, model_matrix;
 
 void reshape(int w, int h);
 void initScene();
@@ -35,6 +35,28 @@ void TW_CALL GetEnvMappingCB(void *value, void *clientData);
 
 void Initialize();
 void Terminate();
+
+struct
+{
+	struct
+	{
+		GLint           model_matrix;
+		GLint           viewproj_matrix;
+		GLint           light_direction;
+		GLint           cam_position;
+		GLint           shading_level;
+	} render;
+
+	struct
+	{
+		GLint           ssao_level;
+		GLint           object_level;
+		GLint           ssao_radius;
+		GLint           weight_by_angle;
+		GLint           randomize_points;
+		GLint           point_count;
+	} ssao;
+} uniforms;
 
 int main(int argc, char **argv)
 {
@@ -69,6 +91,7 @@ int main(int argc, char **argv)
 	TwAddVarCB(bar, "Env Mapping effect", TW_TYPE_BOOL32, SetEnvMappingCB, GetEnvMappingCB, NULL, " label='Env Mapping' key=e help='Toggle env mapping mode.' ");
 	TwAddVarRW(bar, "Scale", TW_TYPE_FLOAT, &scale, " min=0.1 max=20 step=0.1 keyIncr=z keyDecr=Z help='Scale the object (1=original size).' ");
 	TwAddVarRW(bar, "ObjRotation", TW_TYPE_QUAT4F, &rotation, " label='Object rotation' opened=true help='Change the object orientation.' ");
+	TwAddVarRW(bar, "LightDir", TW_TYPE_DIR3F, &light_direction, " label='Light direction' opened=true help='Change the light direction.' ");
 
 	glutMainLoop();
 	Terminate();
@@ -111,8 +134,15 @@ void initScene()
 	renderShader.Create();
 
 	renderProgram = renderShader.GetProgram();
-	cam = new Camera();
+	glUseProgram(renderProgram);
+	uniforms.render.model_matrix = glGetUniformLocation(renderProgram, "model_matrix");
+	uniforms.render.viewproj_matrix = glGetUniformLocation(renderProgram, "viewproj_matrix");
+	uniforms.render.light_direction = glGetUniformLocation(renderProgram, "light_direction");
+	uniforms.render.cam_position = glGetUniformLocation(renderProgram, "cam_position");
+	uniforms.render.shading_level = glGetUniformLocation(renderProgram, "shading_level");
 
+	cam = new Camera();
+	light_direction = glm::vec3(-0.5f, -0.5f, -0.5f);
 	rotation = Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
 	scale = 1.0f;
 
@@ -120,9 +150,6 @@ void initScene()
 	env_mapping = 0;
 
 	model.load("objects/charizard.obj");
-	glUseProgram(renderProgram);
-	viewproj_matrix = glGetUniformLocation(renderProgram, "viewproj_matrix");
-	model_matrix = glGetUniformLocation(renderProgram, "model_matrix");
 }
 void render(void)
 {
@@ -140,8 +167,11 @@ void render(void)
 	glm::mat4 model_mat = glm::translate(glm::vec3(0, 2, 0)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(scale, -scale, scale));
 
 	glUseProgram(renderProgram);
-	glUniformMatrix4fv(viewproj_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
-	glUniformMatrix4fv(model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+	glUniformMatrix4fv(uniforms.render.viewproj_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
+	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+	glm::vec3 light_dir = -light_direction;
+	glUniform3fv(uniforms.render.light_direction, 1, &light_dir[0]);
+	glUniform3fv(uniforms.render.cam_position, 1, &camPos[0]);
 	model.render();
 
 	TwDraw();

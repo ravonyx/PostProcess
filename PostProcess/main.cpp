@@ -20,7 +20,7 @@ Framebuffer *fbo;
 int renderProgram, blitProgram, blitDepthProgram;
 
 Camera *cam;
-Obj	model;
+Obj	object, cube;
 
 int post_effect, env_mapping;
 float ratio, angle, scale;
@@ -153,7 +153,7 @@ void loadShaders()
 
 void initScene()
 {
-	cam = new Camera(0.0f, 0.0f, 0.0f, -1.0f);
+	cam = new Camera(0.0f, -2.0f, 0.0f, -1.0f);
 	light_direction = glm::vec3(-0.5f, -0.5f, -0.5f);
 
 	rotation = Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
@@ -168,7 +168,8 @@ void initScene()
 	fbo = new Framebuffer(width, height);
 	fbo->Init();
 
-	model.load("objects/charizard.obj");
+	object.load("objects/charizard.obj");
+	cube.load("objects/box.obj");
 }
 
 void render(void)
@@ -186,21 +187,33 @@ void render(void)
 	glm::mat4 proj = glm::perspective(45.0f, ratio, 0.1f, 400.0f);
 	glm::mat4 view = cam->GetOrientation() * glm::translate(camPos);
 	glm::mat4 proj_view = proj * view;
-	glm::mat4 model_mat = glm::translate(glm::vec3(0, 2, -10)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(scale, scale, scale));
+	glm::mat4 model_mat;
 
 	glUseProgram(renderProgram);
 	glUniformMatrix4fv(uniforms.render.viewproj_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
-	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
 	glm::vec3 light_dir = -light_direction;
 	glUniform3fv(uniforms.render.light_direction, 1, &light_dir[0]);
 	glUniform3fv(uniforms.render.cam_position, 1, &camPos[0]);
-	model.render();
+	
+
+	model_mat = glm::translate(glm::vec3(0, -12, -20))  *  glm::scale(glm::vec3(10, 10, 10));
+	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+	cube.render();
+	model_mat = glm::translate(glm::vec3(0, 2, -15)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(1, 1, 1));
+	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+	object.render();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	model.render();
+	model_mat = glm::translate(glm::vec3(0, -12, -20))  *  glm::scale(glm::vec3(10, 10, 10));
+	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+	cube.render();
+	model_mat = glm::translate(glm::vec3(0, 2, -15)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(1, 1, 1));
+	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+	object.render();
+
 	displayDebug();
 	
 	TwDraw();

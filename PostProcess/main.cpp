@@ -17,7 +17,7 @@ int width = 1200;
 int height = 800;
 
 Framebuffer *fbo;
-int renderProgram, blitProgram, blitDepthProgram;
+int renderProgram, blitProgram, blitDepthProgram, ssaoProgram;
 
 Camera *cam;
 Obj	object, cube;
@@ -119,7 +119,7 @@ void reshape(int w, int h)
 /** INIT **/
 void loadShaders()
 {
-	EsgiShader renderShader, blitShader, blitDepthShader;
+	EsgiShader renderShader, blitShader, blitDepthShader, ssaoShader;
 
 	printf("render fs\n");
 	renderShader.LoadFragmentShader("shaders/render.fs");
@@ -139,9 +139,16 @@ void loadShaders()
 	blitDepthShader.LoadVertexShader("shaders/blit.vs");
 	blitDepthShader.Create();
 
+	printf("ssao fs\n");
+	ssaoShader.LoadFragmentShader("shaders/ssao.fs");
+	printf("ssao vs\n");
+	ssaoShader.LoadVertexShader("shaders/ssao.vs");
+	ssaoShader.Create();
+
 	renderProgram = renderShader.GetProgram();
 	blitProgram = blitShader.GetProgram();
 	blitDepthProgram = blitDepthShader.GetProgram();
+	ssaoProgram = ssaoShader.GetProgram();
 
 	glUseProgram(renderProgram);
 	uniforms.render.model_matrix = glGetUniformLocation(renderProgram, "model_matrix");
@@ -149,6 +156,13 @@ void loadShaders()
 	uniforms.render.light_direction = glGetUniformLocation(renderProgram, "light_direction");
 	uniforms.render.cam_position = glGetUniformLocation(renderProgram, "cam_position");
 	uniforms.render.shading_level = glGetUniformLocation(renderProgram, "shading_level");
+
+	uniforms.ssao.ssao_radius = glGetUniformLocation(ssaoProgram, "ssao_radius");
+	uniforms.ssao.ssao_level = glGetUniformLocation(ssaoProgram, "ssao_level");
+	uniforms.ssao.object_level = glGetUniformLocation(ssaoProgram, "object_level");
+	uniforms.ssao.weight_by_angle = glGetUniformLocation(ssaoProgram, "weight_by_angle");
+	uniforms.ssao.randomize_points = glGetUniformLocation(ssaoProgram, "randomize_points");
+	uniforms.ssao.point_count = glGetUniformLocation(ssaoProgram, "point_count"); 
 }
 
 void initScene()

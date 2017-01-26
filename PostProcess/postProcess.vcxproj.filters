@@ -65,6 +65,12 @@
     <None Include="shaders\render.vs">
       <Filter>ressources</Filter>
     </None>
+    <None Include="shaders\ssao.fs">
+      <Filter>ressources</Filter>
+    </None>
+    <None Include="shaders\ssao.vs">
+      <Filter>ressources</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sources">

@@ -2,8 +2,7 @@
 
 // Samplers for pre-rendered color, normal and depth
 layout (binding = 0) uniform sampler2D colorTexture;
-layout (binding = 1) uniform sampler2D normalTexture;
-layout (binding = 2) uniform sampler2D depthTexture;
+layout (binding = 1) uniform sampler2D normalDepthTexture;
 
 // Final output
 layout (location = 0) out vec4 color;
@@ -26,13 +25,14 @@ layout (binding = 0, std140) uniform SAMPLE_POINTS
 
 void main(void)
 {
-    // Get texture position from gl_FragCoord
-    vec2 Pdepth = gl_FragCoord.xy / textureSize(depthTexture, 0);
-    vec2 Pnormal = gl_FragCoord.xy / textureSize(normalTexture, 0);
+	// Get texture position from gl_FragCoord
+    vec2 P = gl_FragCoord.xy / textureSize(normalDepthTexture, 0);
+    // ND = normal and depth
+    vec4 ND = textureLod(normalDepthTexture, P, 0);
+    // Extract normal and depth
+    vec3 N = ND.xyz;
+    float my_depth = ND.w;
 
-    vec3 N = textureLod(normalTexture, Pnormal, 0).xyz;
-    float my_depth =  textureLod(depthTexture, Pdepth, 0).x;
-	color = vec4(vec3(my_depth), 1.0);
     // Local temporary variables
     int i;
     int j;
@@ -49,12 +49,14 @@ void main(void)
     // Pull one of the random vectors
     vec4 v = points.random_vectors[n & 255];
 	
-
+	
     // r is our 'radius randomizer'
     float r = (v.r + 3.0) * 0.1;
-    if (randomize_points)
+    if (!randomize_points)
         r = 0.5;
 	
+	
+
     // For each random point (or direction)...
     for (i = 0; i < point_count; i++)
     {
@@ -83,8 +85,8 @@ void main(void)
 
             // Read depth from current fragment
             float their_depth =
-                textureLod(depthTexture,
-                           (Pdepth + dir.xy * f * ssao_radius), 0).x;
+                textureLod(normalDepthTexture,
+                           (P + dir.xy * f * ssao_radius), 0).w;
 
             // Calculate a weighting (d) for this fragment's
             // contribution to occlusion
@@ -99,15 +101,14 @@ void main(void)
         }
     }
 
+
     // Calculate occlusion amount
     float ao_amount = (1.0 - occ / total);
 
     // Get object color from color texture
-    vec4 object_color =  textureLod(colorTexture, Pdepth, 0);
+    vec4 object_color =  textureLod(colorTexture, P, 0);
 
     // Mix in ambient color scaled by SSAO level
-    //color = object_level * object_color +
-    //        mix(vec4(0.2), vec4(ao_amount), ssao_level);
-
-	
+    color = object_level * object_color +
+            mix(vec4(0.2), vec4(ao_amount), ssao_level);
 }

@@ -216,6 +216,7 @@ void initScene()
 	object.load("objects/charizard.obj");
 	cube.load("objects/box.obj");
 
+	//SSAO init
 	SAMPLE_POINTS point_data;
 	for (int i = 0; i < 256; i++)
 	{
@@ -239,6 +240,15 @@ void initScene()
 	glGenBuffers(1, &points_buffer);
 	glBindBuffer(GL_UNIFORM_BUFFER, points_buffer);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SAMPLE_POINTS), &point_data, GL_STATIC_DRAW);
+
+
+	vars.ssao.level = 1.0f;
+	vars.ssao.radius = 0.05f;
+	vars.ssao.show_shading = true;
+	vars.ssao.show_ao = true;
+	vars.ssao.weight_by_angle = true;
+	vars.ssao.randomize_points = true;
+	vars.ssao.point_count = 10;
 }
 
 void render(void)
@@ -272,7 +282,7 @@ void render(void)
 	model_mat = glm::translate(glm::vec3(0, -12, -15))  *  glm::scale(glm::vec3(10, 10, 10));
 	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
 	cube.render();
-	model_mat = glm::translate(glm::vec3(0, 2, -15)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(1, 1, 1));
+	model_mat = glm::translate(glm::vec3(0, 2, -10)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(1, 1, 1));
 	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
 	object.render();
 
@@ -295,7 +305,6 @@ void render(void)
 		glBindTexture(GL_TEXTURE_2D, fbo->colorTexture);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, fbo->normalTexture);
-		
 
 		glDisable(GL_DEPTH_TEST);
 		glBindVertexArray(fbo->vao);
@@ -312,7 +321,7 @@ void render(void)
 		model_mat = glm::translate(glm::vec3(0, -12, -15))  *  glm::scale(glm::vec3(10, 10, 10));
 		glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
 		cube.render();
-		model_mat = glm::translate(glm::vec3(0, 2, -15)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(1, 1, 1));
+		model_mat = glm::translate(glm::vec3(0, 2, -10)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(1, 1, 1));
 		glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
 		object.render();
 	}

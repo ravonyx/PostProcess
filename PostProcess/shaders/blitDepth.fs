@@ -10,17 +10,17 @@ layout(binding=0) uniform sampler2D texture_data;
 out vec4 color;
 in vec2 v_texCoords;
 
-float LinearizeDepth(vec2 uv)
+float linearizeDepth()
 {
   float n = 0.1; // camera z near
   float f = 1000.0; // camera z far
-  float z = texture2D(texture_data, uv).x;
+  float z = texture2D(texture_data, v_texCoords).x;
   return (2.0 * n) / (f + n - z * (f - n));	
 }
 
 void main()
 {
-	color = vec4(vec3(LinearizeDepth(v_texCoords)), 1);
+	color = vec4(vec3(linearizeDepth()), 1);
 }
 
 

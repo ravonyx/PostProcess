@@ -4,14 +4,13 @@ out vec4 color[4];
 
 in vec3 pos;
 in vec3 normals;
-in vec3 lightVector;
 in vec3 viewVector;
 
 uniform vec3 light_direction;
 uniform vec3 cam_position;
 uniform vec3 diffuse_albedo = vec3(0.8, 0.8, 0.9);
-uniform vec3 specular_albedo = vec3(1.0);
-uniform float specular_power = 128.0;
+uniform vec3 specular_albedo = vec3(0.1);
+uniform float specular_power = 42.0;
 uniform float shading_level = 1.0;
 
 void main()

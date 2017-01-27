@@ -11,6 +11,7 @@
 #include "Camera.h"
 #include "Obj.h"
 #include "Framebuffer.h"
+#include "Tools.h"
 
 TwBar *bar;
 int width = 1200;
@@ -22,7 +23,7 @@ int renderProgram, blitProgram, blitDepthProgram, ssaoProgram;
 Camera *cam;
 Obj	object, cube;
 
-int post_effect, env_mapping;
+int ssao, dof;
 float ratio, angle, scale;
 Quaternion rotation;
 glm::vec3 light_direction;
@@ -62,6 +63,36 @@ struct
 		GLint           point_count;
 	} ssao;
 } uniforms;
+
+struct
+{
+	struct
+	{
+		GLint           model_matrix;
+		GLint           viewproj_matrix;
+		GLint           light_direction;
+		GLint           cam_position;
+		GLint           shading_level;
+	} render;
+
+	struct
+	{
+		bool  show_shading;
+		bool  show_ao;
+		float level;
+		float radius;
+		bool  weight_by_angle;
+		bool randomize_points;
+		unsigned int point_count;
+	} ssao;
+} vars;
+
+GLuint points_buffer;
+struct SAMPLE_POINTS
+{
+	glm::vec4     point[256];
+	glm::vec4     random_vectors[256];
+};
 
 int main(int argc, char **argv)
 {
@@ -176,19 +207,45 @@ void initScene()
 	rotation.QuaternionFromAxis(axis, 180);
 	scale = 1.0f;
 
-	post_effect = 0;
-	env_mapping = 0;
+	ssao = 0;
+	dof = 0;
 
 	fbo = new Framebuffer(width, height);
 	fbo->Init();
 
 	object.load("objects/charizard.obj");
 	cube.load("objects/box.obj");
+
+	SAMPLE_POINTS point_data;
+	for (int i = 0; i < 256; i++)
+	{
+		do
+		{
+			point_data.point[i][0] = random_float() * 2.0f - 1.0f;
+			point_data.point[i][1] = random_float() * 2.0f - 1.0f;
+			point_data.point[i][2] = random_float(); //  * 2.0f - 1.0f;
+			point_data.point[i][3] = 0.0f;
+		} while (length(point_data.point[i]) > 1.0f);
+		normalize(point_data.point[i]);
+	}
+	for (int i = 0; i < 256; i++)
+	{
+		point_data.random_vectors[i][0] = random_float();
+		point_data.random_vectors[i][1] = random_float();
+		point_data.random_vectors[i][2] = random_float();
+		point_data.random_vectors[i][3] = random_float();
+	}
+
+	glGenBuffers(1, &points_buffer);
+	glBindBuffer(GL_UNIFORM_BUFFER, points_buffer);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(SAMPLE_POINTS), &point_data, GL_STATIC_DRAW);
 }
 
 void render(void)
 {
 	glViewport(0, 0, width, height);
+
+	//render in framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo->gBuffer);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -203,6 +260,8 @@ void render(void)
 	glm::mat4 proj_view = proj * view;
 	glm::mat4 model_mat;
 
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, points_buffer);
+
 	glUseProgram(renderProgram);
 	glUniformMatrix4fv(uniforms.render.viewproj_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
 	glm::vec3 light_dir = -light_direction;
@@ -210,24 +269,54 @@ void render(void)
 	glUniform3fv(uniforms.render.cam_position, 1, &camPos[0]);
 	
 
-	model_mat = glm::translate(glm::vec3(0, -12, -20))  *  glm::scale(glm::vec3(10, 10, 10));
+	model_mat = glm::translate(glm::vec3(0, -12, -15))  *  glm::scale(glm::vec3(10, 10, 10));
 	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
 	cube.render();
 	model_mat = glm::translate(glm::vec3(0, 2, -15)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(1, 1, 1));
 	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
 	object.render();
+
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	model_mat = glm::translate(glm::vec3(0, -12, -20))  *  glm::scale(glm::vec3(10, 10, 10));
-	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
-	cube.render();
-	model_mat = glm::translate(glm::vec3(0, 2, -15)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(1, 1, 1));
-	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
-	object.render();
+	if (ssao)
+	{
+		glUseProgram(ssaoProgram);
 
+		glUniform1f(uniforms.ssao.ssao_radius, vars.ssao.radius * float(width) / 1000.0f);
+		glUniform1f(uniforms.ssao.ssao_level, vars.ssao.show_ao ? (vars.ssao.show_shading ? 0.3f : 1.0f) : 0.0f);
+		// glUniform1i(uniforms.ssao.weight_by_angle, weight_by_angle ? 1 : 0);
+		glUniform1i(uniforms.ssao.randomize_points, vars.ssao.randomize_points ? 1 : 0);
+		glUniform1ui(uniforms.ssao.point_count, vars.ssao.point_count);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, fbo->colorTexture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, fbo->normalTexture);
+		
+
+		glDisable(GL_DEPTH_TEST);
+		glBindVertexArray(fbo->vao);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glBindVertexArray(0);
+	}
+	else if (dof)
+	{
+
+	}
+	else
+	{
+		//render in screen
+		model_mat = glm::translate(glm::vec3(0, -12, -15))  *  glm::scale(glm::vec3(10, 10, 10));
+		glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+		cube.render();
+		model_mat = glm::translate(glm::vec3(0, 2, -15)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(1, 1, 1));
+		glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+		object.render();
+	}
+	//Render 4 quads at bottom
 	displayDebug();
 	
 	TwDraw();
@@ -276,23 +365,23 @@ void displayDebug()
 void TW_CALL SetSSAOCB(const void *value, void *clientData)
 {
 	(void)clientData; 
-	post_effect = *(const int *)value;
+	ssao = *(const int *)value;
 }
 void TW_CALL GetSSAOCB(void *value, void *clientData)
 {
 	(void)clientData; 
-	*(int *)value = post_effect; 
+	*(int *)value = ssao;
 }
 
 void TW_CALL SetDOFCB(const void *value, void *clientData)
 {
 	(void)clientData;
-	env_mapping = *(const int *)value;
+	dof = *(const int *)value;
 }
 void TW_CALL GetDOFCB(void *value, void *clientData)
 {
 	(void)clientData;
-	*(int *)value = env_mapping;
+	*(int *)value = dof;
 }
 
 static  void __stdcall exitCallbackTw(void* clientData)

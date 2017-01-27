@@ -16,7 +16,7 @@ uniform vec3 light_pos = vec3(100.0, 100.0, 100.0);
 void main()
 {
 	normals = mat3(model_matrix) * normal;
-	vec3 viewspace = mat3(model_matrix) * position;
+	vec4 viewspace = model_matrix * vec4(position, 1.0);
 	viewVector = -viewspace.xyz;
 
 	textCoords = textCoord;

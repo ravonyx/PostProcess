@@ -32,6 +32,7 @@ void main(void)
     // Extract normal and depth
     vec3 N = ND.xyz;
     float my_depth = ND.w;
+	//color = vec4(vec3(my_depth), 1.0);
 
     // Local temporary variables
     int i;
@@ -43,18 +44,14 @@ void main(void)
 
     // n is a pseudo-random number generated from fragment coordinate
     // and depth
-    n = (int(gl_FragCoord.x * 7123.2315 + 125.232) *
-         int(gl_FragCoord.y * 3137.1519 + 234.8)) ^
-         int(my_depth);
+    n = (int(gl_FragCoord.x) * int(gl_FragCoord.y)) ^ int(my_depth);
     // Pull one of the random vectors
     vec4 v = points.random_vectors[n & 255];
-	
 	
     // r is our 'radius randomizer'
     float r = (v.r + 3.0) * 0.1;
     if (!randomize_points)
         r = 0.5;
-	
 	
 
     // For each random point (or direction)...

@@ -71,6 +71,12 @@
     <None Include="shaders\ssao.vs">
       <Filter>ressources</Filter>
     </None>
+    <None Include="shaders\blurV.fs">
+      <Filter>ressources</Filter>
+    </None>
+    <None Include="shaders\blurV.vs">
+      <Filter>ressources</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sources">

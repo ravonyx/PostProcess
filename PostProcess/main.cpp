@@ -17,8 +17,8 @@ TwBar *bar;
 int width = 1200;
 int height = 800;
 
-Framebuffer *fbo;
-int renderProgram, blitProgram, blitDepthProgram, ssaoProgram;
+Framebuffer *fbo, *fboTwo;
+int renderProgram, blitProgram, blitDepthProgram, ssaoProgram, blurVProgram;
 
 Camera *cam;
 Obj	object, cube;
@@ -143,6 +143,11 @@ void reshape(int w, int h)
 	height = h;
 
 	ratio = width * 1.0 / height;
+
+	fbo = new Framebuffer(width, height);
+	fbo->Init();
+	fboTwo = new Framebuffer(width, height);
+	fboTwo->Init();
 	glViewport(0, 0, width, height);
 	TwWindowSize(width, height);
 }
@@ -150,7 +155,7 @@ void reshape(int w, int h)
 /** INIT **/
 void loadShaders()
 {
-	EsgiShader renderShader, blitShader, blitDepthShader, ssaoShader;
+	EsgiShader renderShader, blitShader, blitDepthShader, ssaoShader, blurVShader;
 
 	printf("render fs\n");
 	renderShader.LoadFragmentShader("shaders/render.fs");
@@ -176,10 +181,17 @@ void loadShaders()
 	ssaoShader.LoadVertexShader("shaders/ssao.vs");
 	ssaoShader.Create();
 
+	printf("blurV fs\n");
+	blurVShader.LoadFragmentShader("shaders/blurV.fs");
+	printf("blurV vs\n");
+	blurVShader.LoadVertexShader("shaders/blurV.vs");
+	blurVShader.Create();
+
 	renderProgram = renderShader.GetProgram();
 	blitProgram = blitShader.GetProgram();
 	blitDepthProgram = blitDepthShader.GetProgram();
 	ssaoProgram = ssaoShader.GetProgram();
+	blurVProgram = blurVShader.GetProgram();
 
 	glUseProgram(renderProgram);
 	uniforms.render.model_matrix = glGetUniformLocation(renderProgram, "model_matrix");
@@ -212,6 +224,8 @@ void initScene()
 
 	fbo = new Framebuffer(width, height);
 	fbo->Init();
+	fboTwo = new Framebuffer(width, height);
+	fboTwo->Init();
 
 	object.load("objects/charizard.obj");
 	cube.load("objects/box.obj");
@@ -313,6 +327,37 @@ void render(void)
 	}
 	else if (dof)
 	{
+		glBindFramebuffer(GL_FRAMEBUFFER, fboTwo->gBuffer);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glUseProgram(blurVProgram);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, fbo->colorTexture);
+		glm::ivec2 direction = glm::ivec2(1, 0);
+		glUniform2iv(glGetUniformLocation(blurVProgram, "direction"), 1, &direction[0]);
+
+		glDisable(GL_DEPTH_TEST);
+		glBindVertexArray(fbo->vao);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glBindVertexArray(0);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glUseProgram(blurVProgram);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, fboTwo->colorTexture);
+		direction = glm::ivec2(0, 1);
+		glUniform2iv(glGetUniformLocation(blurVProgram, "direction"), 1, &direction[0]);
+
+		glDisable(GL_DEPTH_TEST);
+		glBindVertexArray(fboTwo->vao);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glBindVertexArray(0);
+
 
 	}
 	else
@@ -335,11 +380,7 @@ void render(void)
 
 void displayDebug()
 {
-	GLuint textLoc = glGetUniformLocation(blitProgram, "texture_data");
-	GLuint textDepthLoc = glGetUniformLocation(blitDepthProgram, "texture_data");
-
 	glUseProgram(blitProgram);
-	glActiveTexture(GL_TEXTURE0);
 
 	glViewport(0, 0, width / 4, height / 5);
 	glBindVertexArray(fbo->vao);
@@ -351,14 +392,12 @@ void displayDebug()
 	glViewport(width / 4, 0, width / 4, height / 5);
 	glBindVertexArray(fbo->vao);
 	glBindTexture(GL_TEXTURE_2D, fbo->normalTexture);
-	glUniform1i(textLoc, 0);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glBindVertexArray(0);
 
 	glViewport(width / 4 + width / 4, 0, width / 4, height / 5);
 	glBindVertexArray(fbo->vao);
 	glBindTexture(GL_TEXTURE_2D, fbo->specularTexture);
-	glUniform1i(textLoc, 0);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glBindVertexArray(0);
 
@@ -366,7 +405,6 @@ void displayDebug()
 	glViewport(width / 4 + width / 4 + width / 4, 0, width / 4, height / 5);
 	glBindVertexArray(fbo->vao);
 	glBindTexture(GL_TEXTURE_2D, fbo->gDepth);
-	glUniform1i(textDepthLoc, 0);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glBindVertexArray(0);
 }

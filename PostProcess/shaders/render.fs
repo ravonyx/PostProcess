@@ -27,7 +27,9 @@ void main()
     diffuse *= diffuse;
 
 	vec3 vert_to_eye = normalize(cam_position - pos);
-	float specular_factor = dot(vert_to_eye, -R);
+	R = vec3(-R.x, R.yz);
+
+	float specular_factor = dot(vert_to_eye, R);
 	vec3 specular = vec3(0,0,0);
 	if (specular_factor > 0) 
 	{

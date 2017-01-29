@@ -19,6 +19,7 @@ public:
 	Quaternion();
 	Quaternion(float _x, float _y, float _z, float _w);
 	Quaternion QuaternionFromAxis(float axis[], float angle);
+	Quaternion QuaternionFromAxisDegrees(float axis[], float angle);
 	glm::mat4 QuaternionToMatrix();
 	Quaternion Conjugate();
 

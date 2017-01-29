@@ -19,15 +19,18 @@ int height = 800;
 float near = 0.1f;
 float far = 1000.0f;
 
-Framebuffer *fbo, *fboBlurFirst, *fboBlurSecond, *fboCoc;
-int renderProgram, blitProgram, blitDepthProgram, ssaoProgram, blurProgram, cocProgram, dofProgram;
+std::string infos;
 
 Camera *cam;
 Obj	object, cube;
+int ssao, dof;
+
+
+Framebuffer *fbo, *fboBlurFirst, *fboBlurSecond, *fboCoc;
+int renderProgram, blitProgram, blitDepthProgram, ssaoProgram, blurProgram, cocProgram, dofProgram;
 
 float focusVar = 5.0f;
-int ssao, dof;
-float ratio, angle, scale;
+float ratio, scale;
 Quaternion rotation;
 glm::vec3 light_direction;
 
@@ -45,6 +48,11 @@ void TW_CALL GetSSAOCB(void *value, void *clientData);
 void TW_CALL SetDOFCB(const void *value, void *clientData);
 void TW_CALL GetDOFCB(void *value, void *clientData);
 static  void __stdcall exitCallbackTw(void* clientData);
+void keyboardDown(unsigned char key, int x, int y);
+void keyboardUp(unsigned char key, int x, int y);
+void mouseButton(int button, int state, int x, int y);
+void mouseMove(int x, int y);
+void computePos(int unused);
 
 struct
 {
@@ -113,6 +121,7 @@ int main(int argc, char **argv)
 	/** FONCTIONS GLUT **/
 	glutDisplayFunc(render);
 	glutReshapeFunc(reshape);
+	glutTimerFunc(10, computePos, 0);
 	TwInit(TW_OPENGL, NULL);
 
 	loadShaders();
@@ -123,16 +132,19 @@ int main(int argc, char **argv)
 	glutMotionFunc((GLUTmousemotionfun)TwEventMouseMotionGLUT);
 	glutPassiveMotionFunc((GLUTmousemotionfun)TwEventMouseMotionGLUT);
 	glutSpecialFunc((GLUTspecialfun)TwEventSpecialGLUT);
+	glutKeyboardFunc(keyboardDown);
+	glutKeyboardUpFunc(keyboardUp);
 
 	// Create a tweak bar
 	bar = TwNewBar("TweakBar");
 	TwWindowSize(width, height);
-	TwDefine(" TweakBar size='250 500' color='200 200 200' "); 
+	TwDefine(" TweakBar size='300 500' color='200 200 200' "); 
+	TwAddVarRO(bar, "Output", TW_TYPE_STDSTRING, &infos, " label='Infos' ");
+
 	TwAddVarCB(bar, "SSAO", TW_TYPE_BOOL32, SetSSAOCB, GetSSAOCB, NULL, " label='SSAO' key=e help='Screen space ambient occlusion' ");
 	TwAddVarCB(bar, "DOF", TW_TYPE_BOOL32, SetDOFCB, GetDOFCB, NULL, " label='DOF' key=e help='Depth of field' ");
 
-	TwAddVarRW(bar, "Focus", TW_TYPE_FLOAT, &focusVar, " min=0.1 max=200 step=0.1 keyIncr=z keyDecr=Z help='Scale the object (1=original size).' ");
-	TwAddVarRW(bar, "Scale", TW_TYPE_FLOAT, &scale, " min=0.1 max=20 step=0.1 keyIncr=z keyDecr=Z help='Scale the object (1=original size).' ");
+	TwAddVarRW(bar, "Focus", TW_TYPE_FLOAT, &focusVar, " min=0.1 max=200 step=0.1 keyIncr=z keyDecr=Z help='Focus (1=original size).' ");
 	TwAddVarRW(bar, "ObjRotation", TW_TYPE_QUAT4F, &rotation, " label='Object rotation' opened=true help='Change the object orientation.' ");
 	TwAddVarRW(bar, "LightDir", TW_TYPE_DIR3F, &light_direction, " label='Light direction' opened=true help='Change the light direction.' ");
 	TwAddSeparator(bar, "program", "");
@@ -238,14 +250,15 @@ void loadShaders()
 
 void initScene()
 {
-	cam = new Camera(0.0f, -2.0f, 0.0f, -1.0f);
+	infos = "In mode UI";
+
+	cam = new Camera(0.0f, -5.0f, 0.0f, -1.0f);
 	light_direction = glm::vec3(-0.5f, -0.5f, -0.5f);
 
 	rotation = Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
 
 	float axis[3] = { 0, 0, 1 };
-	rotation.QuaternionFromAxis(axis, 180);
-	scale = 1.0f;
+	rotation.QuaternionFromAxisDegrees(axis, 180);
 
 	ssao = 0;
 	dof = 0;
@@ -327,10 +340,16 @@ void render(void)
 	glUniform3fv(uniforms.render.cam_position, 1, &camPos[0]);
 	
 
-	model_mat = glm::translate(glm::vec3(0, -12, -15))  *  glm::scale(glm::vec3(10, 10, 10));
+	model_mat = glm::translate(glm::vec3(0, -52, -55))  *  glm::scale(glm::vec3(50, 50, 50));
 	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
 	cube.render();
 	model_mat = glm::translate(glm::vec3(0, 2, -15)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(1, 1, 1));
+	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+	object.render();
+	model_mat = glm::translate(glm::vec3(0, 2, -35)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(1, 1, 1));
+	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+	object.render();
+	model_mat = glm::translate(glm::vec3(0, 2, -55)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(1, 1, 1));
 	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
 	object.render();
 
@@ -406,10 +425,16 @@ void render(void)
 	else
 	{
 		//render in screen
-		model_mat = glm::translate(glm::vec3(0, -12, -15))  *  glm::scale(glm::vec3(10, 10, 10));
+		model_mat = glm::translate(glm::vec3(0, -52, -55))  *  glm::scale(glm::vec3(50, 50, 50));
 		glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
 		cube.render();
 		model_mat = glm::translate(glm::vec3(0, 2, -15)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(1, 1, 1));
+		glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+		object.render();
+		model_mat = glm::translate(glm::vec3(0, 2, -35)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(1, 1, 1));
+		glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+		object.render();
+		model_mat = glm::translate(glm::vec3(0, 2, -55)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(1, 1, 1));
 		glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
 		object.render();
 	}
@@ -490,4 +515,105 @@ static  void __stdcall exitCallbackTw(void* clientData)
 {
 	TwTerminate();
 	exit(1);
+}
+
+void keyboardDown(unsigned char key, int x, int y)
+{
+	if (key == ' ')
+	{
+		mode_ui = !mode_ui;
+		if (mode_ui)
+		{
+			infos = "In mode UI";
+			glutMouseFunc((GLUTmousebuttonfun)TwEventMouseButtonGLUT);
+			glutMotionFunc((GLUTmousemotionfun)TwEventMouseMotionGLUT);
+			glutPassiveMotionFunc((GLUTmousemotionfun)TwEventMouseMotionGLUT);
+			glutSpecialFunc((GLUTspecialfun)TwEventSpecialGLUT);
+		}
+		else
+		{
+			infos = "In mode camera";
+			glutMouseFunc(mouseButton);
+			glutMotionFunc(mouseMove);
+			glutPassiveMotionFunc(NULL);
+			glutSpecialFunc(NULL);
+		}
+	}
+
+	if (!mode_ui)
+	{
+		switch (key)
+		{
+		case 'z':
+			cam->deltaForward = -1;
+			break;
+		case 's':
+			cam->deltaForward = 1;
+			break;
+		case 'q':
+			cam->deltaStrafe = -1;
+			break;
+		case 'd':
+			cam->deltaStrafe = 1;
+			break;
+		}
+	}
+	TwDraw();
+	glutPostRedisplay();
+}
+
+void keyboardUp(unsigned char key, int xx, int yy)
+{
+	if (!mode_ui)
+	{
+		switch (key)
+		{
+		case 'z':
+		case 's':
+			cam->deltaForward = 0;
+			break;
+		case 'q':
+		case 'd':
+			cam->deltaStrafe = 0;
+			break;
+		}
+	}
+}
+
+
+void mouseButton(int button, int state, int x, int y)
+{
+	if (!mode_ui)
+	{
+		// Gestion camera en fonction du clic souris
+		if (button == GLUT_RIGHT_BUTTON)
+		{
+			// Relacher la camera
+			if (state == GLUT_UP)
+			{
+				cam->releaseCam();
+			}
+			// Mise à jour origine du clic
+			else
+			{
+				cam->grabCam(x, y);
+			}
+		}
+	}
+	glutPostRedisplay();
+}
+
+
+void mouseMove(int x, int y)
+{
+	if (!mode_ui)
+		cam->orienterCam(x, y);
+
+	glutPostRedisplay();
+}
+
+void computePos(int unused)
+{
+	cam->updatePos();
+	glutTimerFunc(10, computePos, 0);
 }

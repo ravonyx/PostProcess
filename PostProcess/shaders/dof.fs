@@ -20,4 +20,3 @@ void main()
 	color = mix(colorTex, blurTex, coef);
 }
 
-

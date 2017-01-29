@@ -154,8 +154,12 @@
     <None Include="shaders\blit.fs" />
     <None Include="shaders\blit.vs" />
     <None Include="shaders\blitDepth.fs" />
-    <None Include="shaders\blurV.fs" />
-    <None Include="shaders\blurV.vs" />
+    <None Include="shaders\blur.fs" />
+    <None Include="shaders\blur.vs" />
+    <None Include="shaders\coc.fs" />
+    <None Include="shaders\coc.vs" />
+    <None Include="shaders\dof.fs" />
+    <None Include="shaders\dof.vs" />
     <None Include="shaders\render.fs" />
     <None Include="shaders\render.vs" />
     <None Include="shaders\ssao.fs" />

@@ -16,13 +16,16 @@
 TwBar *bar;
 int width = 1200;
 int height = 800;
+float near = 0.1f;
+float far = 1000.0f;
 
-Framebuffer *fbo, *fboTwo;
-int renderProgram, blitProgram, blitDepthProgram, ssaoProgram, blurVProgram;
+Framebuffer *fbo, *fboBlurFirst, *fboBlurSecond, *fboCoc;
+int renderProgram, blitProgram, blitDepthProgram, ssaoProgram, blurProgram, cocProgram, dofProgram;
 
 Camera *cam;
 Obj	object, cube;
 
+float focusVar = 5.0f;
 int ssao, dof;
 float ratio, angle, scale;
 Quaternion rotation;
@@ -35,6 +38,7 @@ void initScene();
 void loadShaders();
 void render(void);
 void displayDebug();
+void blurPass(glm::ivec2 &direction, Framebuffer *fbo);
 
 void TW_CALL SetSSAOCB(const void *value, void *clientData);
 void TW_CALL GetSSAOCB(void *value, void *clientData);
@@ -62,19 +66,15 @@ struct
 		GLint           randomize_points;
 		GLint           point_count;
 	} ssao;
+	struct
+	{
+		GLint           focus;
+		GLint			screenToView;
+	} coc;
 } uniforms;
 
 struct
 {
-	struct
-	{
-		GLint           model_matrix;
-		GLint           viewproj_matrix;
-		GLint           light_direction;
-		GLint           cam_position;
-		GLint           shading_level;
-	} render;
-
 	struct
 	{
 		bool  show_shading;
@@ -85,6 +85,11 @@ struct
 		bool randomize_points;
 		unsigned int point_count;
 	} ssao;
+	struct
+	{
+		glm::vec3 focus;
+		glm::mat4 screenToView;
+	} coc;
 } vars;
 
 GLuint points_buffer;
@@ -126,6 +131,7 @@ int main(int argc, char **argv)
 	TwAddVarCB(bar, "SSAO", TW_TYPE_BOOL32, SetSSAOCB, GetSSAOCB, NULL, " label='SSAO' key=e help='Screen space ambient occlusion' ");
 	TwAddVarCB(bar, "DOF", TW_TYPE_BOOL32, SetDOFCB, GetDOFCB, NULL, " label='DOF' key=e help='Depth of field' ");
 
+	TwAddVarRW(bar, "Focus", TW_TYPE_FLOAT, &focusVar, " min=0.1 max=200 step=0.1 keyIncr=z keyDecr=Z help='Scale the object (1=original size).' ");
 	TwAddVarRW(bar, "Scale", TW_TYPE_FLOAT, &scale, " min=0.1 max=20 step=0.1 keyIncr=z keyDecr=Z help='Scale the object (1=original size).' ");
 	TwAddVarRW(bar, "ObjRotation", TW_TYPE_QUAT4F, &rotation, " label='Object rotation' opened=true help='Change the object orientation.' ");
 	TwAddVarRW(bar, "LightDir", TW_TYPE_DIR3F, &light_direction, " label='Light direction' opened=true help='Change the light direction.' ");
@@ -146,8 +152,13 @@ void reshape(int w, int h)
 
 	fbo = new Framebuffer(width, height);
 	fbo->Init();
-	fboTwo = new Framebuffer(width, height);
-	fboTwo->Init();
+	fboBlurFirst = new Framebuffer(width, height);
+	fboBlurFirst->Init();
+	fboBlurSecond = new Framebuffer(width, height);
+	fboBlurSecond->Init();
+	fboCoc = new Framebuffer(width, height);
+	fboCoc->Init();
+
 	glViewport(0, 0, width, height);
 	TwWindowSize(width, height);
 }
@@ -155,7 +166,7 @@ void reshape(int w, int h)
 /** INIT **/
 void loadShaders()
 {
-	EsgiShader renderShader, blitShader, blitDepthShader, ssaoShader, blurVShader;
+	EsgiShader renderShader, blitShader, blitDepthShader, ssaoShader, blurShader, cocShader, dofShader;
 
 	printf("render fs\n");
 	renderShader.LoadFragmentShader("shaders/render.fs");
@@ -181,17 +192,31 @@ void loadShaders()
 	ssaoShader.LoadVertexShader("shaders/ssao.vs");
 	ssaoShader.Create();
 
-	printf("blurV fs\n");
-	blurVShader.LoadFragmentShader("shaders/blurV.fs");
-	printf("blurV vs\n");
-	blurVShader.LoadVertexShader("shaders/blurV.vs");
-	blurVShader.Create();
+	printf("blur fs\n");
+	blurShader.LoadFragmentShader("shaders/blur.fs");
+	printf("blur vs\n");
+	blurShader.LoadVertexShader("shaders/blur.vs");
+	blurShader.Create();
+
+	printf("coc fs\n");
+	cocShader.LoadFragmentShader("shaders/coc.fs");
+	printf("coc vs\n");
+	cocShader.LoadVertexShader("shaders/coc.vs");
+	cocShader.Create();
+
+	printf("dof fs\n");
+	dofShader.LoadFragmentShader("shaders/dof.fs");
+	printf("dof vs\n");
+	dofShader.LoadVertexShader("shaders/dof.vs");
+	dofShader.Create();
 
 	renderProgram = renderShader.GetProgram();
 	blitProgram = blitShader.GetProgram();
 	blitDepthProgram = blitDepthShader.GetProgram();
 	ssaoProgram = ssaoShader.GetProgram();
-	blurVProgram = blurVShader.GetProgram();
+	blurProgram = blurShader.GetProgram();
+	cocProgram = cocShader.GetProgram();
+	dofProgram = dofShader.GetProgram();
 
 	glUseProgram(renderProgram);
 	uniforms.render.model_matrix = glGetUniformLocation(renderProgram, "model_matrix");
@@ -205,7 +230,10 @@ void loadShaders()
 	uniforms.ssao.object_level = glGetUniformLocation(ssaoProgram, "object_level");
 	uniforms.ssao.weight_by_angle = glGetUniformLocation(ssaoProgram, "weight_by_angle");
 	uniforms.ssao.randomize_points = glGetUniformLocation(ssaoProgram, "randomize_points");
-	uniforms.ssao.point_count = glGetUniformLocation(ssaoProgram, "point_count"); 
+	uniforms.ssao.point_count = glGetUniformLocation(ssaoProgram, "point_count");
+
+	uniforms.coc.focus = glGetUniformLocation(cocProgram, "focus");
+	uniforms.coc.screenToView = glGetUniformLocation(cocProgram, "screenToView");
 }
 
 void initScene()
@@ -224,8 +252,12 @@ void initScene()
 
 	fbo = new Framebuffer(width, height);
 	fbo->Init();
-	fboTwo = new Framebuffer(width, height);
-	fboTwo->Init();
+	fboBlurFirst = new Framebuffer(width, height);
+	fboBlurFirst->Init();
+	fboBlurSecond = new Framebuffer(width, height);
+	fboBlurSecond->Init();
+	fboCoc = new Framebuffer(width, height);
+	fboCoc->Init();
 
 	object.load("objects/charizard.obj");
 	cube.load("objects/box.obj");
@@ -263,6 +295,8 @@ void initScene()
 	vars.ssao.weight_by_angle = true;
 	vars.ssao.randomize_points = true;
 	vars.ssao.point_count = 10;
+
+	vars.coc.focus = glm::vec3(near, focusVar, far);
 }
 
 void render(void)
@@ -279,7 +313,7 @@ void render(void)
 
 	// Définition de la caméra
 	glm::vec3 camPos = glm::vec3(cam->posx, cam->posy, cam->posz);
-	glm::mat4 proj = glm::perspective(45.0f, ratio, 0.1f, 400.0f);
+	glm::mat4 proj = glm::perspective(45.0f, ratio, near, far);
 	glm::mat4 view = cam->GetOrientation() * glm::translate(camPos);
 	glm::mat4 proj_view = proj * view;
 	glm::mat4 model_mat;
@@ -299,7 +333,6 @@ void render(void)
 	model_mat = glm::translate(glm::vec3(0, 2, -15)) * rotation.QuaternionToMatrix() *  glm::scale(glm::vec3(1, 1, 1));
 	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
 	object.render();
-
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -327,38 +360,48 @@ void render(void)
 	}
 	else if (dof)
 	{
-		glBindFramebuffer(GL_FRAMEBUFFER, fboTwo->gBuffer);
+		//Blur pass horizontal
+		glBindFramebuffer(GL_FRAMEBUFFER, fboBlurFirst->gBuffer);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glUseProgram(blurProgram);
+		blurPass(glm::ivec2(1, 0), fbo);
 
-		glUseProgram(blurVProgram);
+		//Blur pass vertical
+		glBindFramebuffer(GL_FRAMEBUFFER, fboBlurSecond->gBuffer);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		blurPass(glm::ivec2(0, 1), fboBlurFirst);
+		
+		glBindFramebuffer(GL_FRAMEBUFFER, fboCoc->gBuffer);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glUseProgram(cocProgram);
+
+		glUniformMatrix4fv(uniforms.coc.screenToView, 1, GL_FALSE, &glm::inverse(proj)[0][0]);
+		vars.coc.focus = glm::vec3(near, focusVar, far);
+		glUniform3fv(uniforms.coc.focus, 1, &vars.coc.focus[0]);
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, fbo->colorTexture);
-		glm::ivec2 direction = glm::ivec2(1, 0);
-		glUniform2iv(glGetUniformLocation(blurVProgram, "direction"), 1, &direction[0]);
+		glBindTexture(GL_TEXTURE_2D, fbo->gDepth);
 
 		glDisable(GL_DEPTH_TEST);
 		glBindVertexArray(fbo->vao);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		glBindVertexArray(0);
 
+		glUseProgram(dofProgram);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glUseProgram(blurVProgram);
-
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, fboTwo->colorTexture);
-		direction = glm::ivec2(0, 1);
-		glUniform2iv(glGetUniformLocation(blurVProgram, "direction"), 1, &direction[0]);
+		glBindTexture(GL_TEXTURE_2D, fbo->colorTexture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, fboBlurSecond->colorTexture);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, fboCoc->colorTexture);
 
 		glDisable(GL_DEPTH_TEST);
-		glBindVertexArray(fboTwo->vao);
+		glBindVertexArray(fbo->vao);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		glBindVertexArray(0);
-
-
 	}
 	else
 	{
@@ -376,6 +419,18 @@ void render(void)
 	TwDraw();
 	glutSwapBuffers();
 	glutPostRedisplay();
+}
+
+void blurPass(glm::ivec2 &direction, Framebuffer *fbo)
+{
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, fbo->colorTexture);
+	glUniform2iv(glGetUniformLocation(blurProgram, "direction"), 1, &direction[0]);
+
+	glDisable(GL_DEPTH_TEST);
+	glBindVertexArray(fbo->vao);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
 }
 
 void displayDebug()

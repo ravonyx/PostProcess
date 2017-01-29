@@ -10,7 +10,6 @@ layout(binding=0) uniform sampler2D texture_data;
 out vec4 color;
 in vec2 v_texCoords;
  
-uniform int sampleCount = 6;
 uniform ivec2 direction;
 uniform float resolution = 500;
 uniform float radius = 0.8;

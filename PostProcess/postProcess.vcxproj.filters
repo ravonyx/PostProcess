@@ -71,10 +71,22 @@
     <None Include="shaders\ssao.vs">
       <Filter>ressources</Filter>
     </None>
-    <None Include="shaders\blurV.fs">
+    <None Include="shaders\blur.fs">
       <Filter>ressources</Filter>
     </None>
-    <None Include="shaders\blurV.vs">
+    <None Include="shaders\blur.vs">
+      <Filter>ressources</Filter>
+    </None>
+    <None Include="shaders\coc.fs">
+      <Filter>ressources</Filter>
+    </None>
+    <None Include="shaders\coc.vs">
+      <Filter>ressources</Filter>
+    </None>
+    <None Include="shaders\dof.fs">
+      <Filter>ressources</Filter>
+    </None>
+    <None Include="shaders\dof.vs">
       <Filter>ressources</Filter>
     </None>
   </ItemGroup>

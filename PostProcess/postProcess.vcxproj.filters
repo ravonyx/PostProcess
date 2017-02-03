@@ -89,6 +89,12 @@
     <None Include="shaders\dof.vs">
       <Filter>ressources</Filter>
     </None>
+    <None Include="shaders\antiAliasing.fs">
+      <Filter>ressources</Filter>
+    </None>
+    <None Include="shaders\antiAliasing.vs">
+      <Filter>ressources</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sources">

@@ -23,11 +23,12 @@ std::string infos;
 
 Camera *cam;
 Obj	object, cube;
-int ssao, dof;
+int ssao, dof, antiAliasing;
 
 
 Framebuffer *fbo, *fboBlurFirst, *fboBlurSecond, *fboCoc;
-int renderProgram, blitProgram, blitDepthProgram, ssaoProgram, blurProgram, cocProgram, dofProgram;
+int renderProgram, blitProgram, blitDepthProgram;
+int ssaoProgram, blurProgram, cocProgram, dofProgram, antiAliasingProgram;
 
 float focusVar = 5.0f;
 float ratio, scale;
@@ -47,6 +48,9 @@ void TW_CALL SetSSAOCB(const void *value, void *clientData);
 void TW_CALL GetSSAOCB(void *value, void *clientData);
 void TW_CALL SetDOFCB(const void *value, void *clientData);
 void TW_CALL GetDOFCB(void *value, void *clientData);
+void TW_CALL SetAntiAliasingCB(const void *value, void *clientData);
+void TW_CALL GetAntiAliasingCB(void *value, void *clientData);
+
 static  void __stdcall exitCallbackTw(void* clientData);
 void keyboardDown(unsigned char key, int x, int y);
 void keyboardUp(unsigned char key, int x, int y);
@@ -79,6 +83,11 @@ struct
 		GLint           focus;
 		GLint			screenToView;
 	} coc;
+	struct
+	{
+		GLint           width;
+		GLint			height;
+	} antiAliasing;
 } uniforms;
 
 struct
@@ -141,10 +150,11 @@ int main(int argc, char **argv)
 	TwDefine(" TweakBar size='300 500' color='200 200 200' "); 
 	TwAddVarRO(bar, "Output", TW_TYPE_STDSTRING, &infos, " label='Infos' ");
 
-	TwAddVarCB(bar, "SSAO", TW_TYPE_BOOL32, SetSSAOCB, GetSSAOCB, NULL, " label='SSAO' key=e help='Screen space ambient occlusion' ");
-	TwAddVarCB(bar, "DOF", TW_TYPE_BOOL32, SetDOFCB, GetDOFCB, NULL, " label='DOF' key=e help='Depth of field' ");
+	TwAddVarCB(bar, "SSAO", TW_TYPE_BOOL32, SetSSAOCB, GetSSAOCB, NULL, " label='SSAO' help='Screen space ambient occlusion' ");
+	TwAddVarCB(bar, "DOF", TW_TYPE_BOOL32, SetDOFCB, GetDOFCB, NULL, " label='DOF' help='Depth of field' ");
+	TwAddVarCB(bar, "AntiAliasing", TW_TYPE_BOOL32, SetAntiAliasingCB, GetAntiAliasingCB, NULL, " label='Anti aliasing'  help='Anti aliasing' ");
 
-	TwAddVarRW(bar, "Focus", TW_TYPE_FLOAT, &focusVar, " min=0.1 max=200 step=0.1 keyIncr=z keyDecr=Z help='Focus (1=original size).' ");
+	TwAddVarRW(bar, "Focus", TW_TYPE_FLOAT, &focusVar, " min=0.1 max=200 step=0.1 help='Focus (1=original size).' ");
 	TwAddVarRW(bar, "ObjRotation", TW_TYPE_QUAT4F, &rotation, " label='Object rotation' opened=true help='Change the object orientation.' ");
 	TwAddVarRW(bar, "LightDir", TW_TYPE_DIR3F, &light_direction, " label='Light direction' opened=true help='Change the light direction.' ");
 	TwAddSeparator(bar, "program", "");
@@ -178,7 +188,7 @@ void reshape(int w, int h)
 /** INIT **/
 void loadShaders()
 {
-	EsgiShader renderShader, blitShader, blitDepthShader, ssaoShader, blurShader, cocShader, dofShader;
+	EsgiShader renderShader, blitShader, blitDepthShader, ssaoShader, blurShader, cocShader, dofShader, antiAliasingShader;
 
 	printf("render fs\n");
 	renderShader.LoadFragmentShader("shaders/render.fs");
@@ -222,6 +232,12 @@ void loadShaders()
 	dofShader.LoadVertexShader("shaders/dof.vs");
 	dofShader.Create();
 
+	printf("antiAliasing fs\n");
+	antiAliasingShader.LoadFragmentShader("shaders/antiAliasing.fs");
+	printf("antiAliasing vs\n");
+	antiAliasingShader.LoadVertexShader("shaders/antiAliasing.vs");
+	antiAliasingShader.Create();
+
 	renderProgram = renderShader.GetProgram();
 	blitProgram = blitShader.GetProgram();
 	blitDepthProgram = blitDepthShader.GetProgram();
@@ -229,8 +245,8 @@ void loadShaders()
 	blurProgram = blurShader.GetProgram();
 	cocProgram = cocShader.GetProgram();
 	dofProgram = dofShader.GetProgram();
+	antiAliasingProgram = antiAliasingShader.GetProgram();
 
-	glUseProgram(renderProgram);
 	uniforms.render.model_matrix = glGetUniformLocation(renderProgram, "model_matrix");
 	uniforms.render.viewproj_matrix = glGetUniformLocation(renderProgram, "viewproj_matrix");
 	uniforms.render.light_direction = glGetUniformLocation(renderProgram, "light_direction");
@@ -246,6 +262,9 @@ void loadShaders()
 
 	uniforms.coc.focus = glGetUniformLocation(cocProgram, "focus");
 	uniforms.coc.screenToView = glGetUniformLocation(cocProgram, "screenToView");
+
+	uniforms.antiAliasing.width = glGetUniformLocation(antiAliasingProgram, "width");
+	uniforms.antiAliasing.height = glGetUniformLocation(antiAliasingProgram, "height");
 }
 
 void initScene()
@@ -338,7 +357,6 @@ void render(void)
 	glm::vec3 light_dir = -light_direction;
 	glUniform3fv(uniforms.render.light_direction, 1, &light_dir[0]);
 	glUniform3fv(uniforms.render.cam_position, 1, &camPos[0]);
-	
 
 	model_mat = glm::translate(glm::vec3(0, -52, -55))  *  glm::scale(glm::vec3(50, 50, 50));
 	glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
@@ -382,6 +400,7 @@ void render(void)
 		//Blur pass horizontal
 		glBindFramebuffer(GL_FRAMEBUFFER, fboBlurFirst->gBuffer);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 		glUseProgram(blurProgram);
 		blurPass(glm::ivec2(1, 0), fbo);
 
@@ -416,6 +435,21 @@ void render(void)
 		glBindTexture(GL_TEXTURE_2D, fboBlurSecond->colorTexture);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, fboCoc->colorTexture);
+
+		glDisable(GL_DEPTH_TEST);
+		glBindVertexArray(fbo->vao);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glBindVertexArray(0);
+	}
+	else if (antiAliasing)
+	{
+		glUseProgram(antiAliasingProgram);
+
+		glUniform1f(uniforms.antiAliasing.width, width);
+		glUniform1f(uniforms.antiAliasing.height, height);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, fbo->colorTexture);
 
 		glDisable(GL_DEPTH_TEST);
 		glBindVertexArray(fbo->vao);
@@ -499,7 +533,6 @@ void TW_CALL GetSSAOCB(void *value, void *clientData)
 	(void)clientData; 
 	*(int *)value = ssao;
 }
-
 void TW_CALL SetDOFCB(const void *value, void *clientData)
 {
 	(void)clientData;
@@ -509,6 +542,16 @@ void TW_CALL GetDOFCB(void *value, void *clientData)
 {
 	(void)clientData;
 	*(int *)value = dof;
+}
+void TW_CALL SetAntiAliasingCB(const void *value, void *clientData)
+{
+	(void)clientData;
+	antiAliasing = *(const int *)value;
+}
+void TW_CALL GetAntiAliasingCB(void *value, void *clientData)
+{
+	(void)clientData;
+	*(int *)value = antiAliasing;
 }
 
 static  void __stdcall exitCallbackTw(void* clientData)

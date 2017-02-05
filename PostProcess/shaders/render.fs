@@ -17,10 +17,10 @@ void main()
 {
 	vec3 normal_calc = normalize(normals);
     vec3 light_direction_norm = normalize(light_direction);
-	vec3 view_direction = normalize(-cam_position);
+	vec3 view_direction = normalize(pos -cam_position);
 
     // Calculate R locally
-    vec3 R = reflect(-light_direction_norm, normal_calc);
+    vec3 R = reflect(light_direction_norm, normal_calc);
 
     // Compute the diffuse and specular components for each fragment
     vec3 diffuse = max(dot(normal_calc, light_direction_norm), 0.0) * diffuse_albedo;

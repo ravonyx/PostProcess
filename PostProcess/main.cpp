@@ -146,8 +146,9 @@ int main(int argc, char **argv)
 
 	// Create a tweak bar
 	bar = TwNewBar("TweakBar");
-	TwWindowSize(width, height);
-	TwDefine(" TweakBar size='300 500' color='200 200 200' "); 
+	TwDefine(" TweakBar size='300 350' color='200 200 200' valueswidth=150 "); 
+	float refresh = 0.1f;
+	TwSetParam(bar, NULL, "refresh", TW_PARAM_FLOAT, 1, &refresh);
 	TwAddVarRO(bar, "Output", TW_TYPE_STDSTRING, &infos, " label='Infos' ");
 
 	TwAddVarCB(bar, "SSAO", TW_TYPE_BOOL32, SetSSAOCB, GetSSAOCB, NULL, " label='SSAO' help='Screen space ambient occlusion' ");

@@ -30,7 +30,7 @@ Framebuffer *fbo, *fboBlurFirst, *fboBlurSecond, *fboCoc;
 int renderProgram, blitProgram, blitDepthProgram;
 int ssaoProgram, blurProgram, cocProgram, dofProgram, antiAliasingProgram;
 
-float focusVar = 5.0f;
+float focusVar = 75.0f;
 float ratio, scale;
 Quaternion rotation;
 glm::vec3 light_direction;
